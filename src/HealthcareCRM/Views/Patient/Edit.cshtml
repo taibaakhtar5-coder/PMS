@@ -1,0 +1,264 @@
+@{
+    ViewData["Title"] = "Edit Patient";
+    var patientId = ViewBag.PatientId;
+}
+
+<div class="max-w-2xl mx-auto space-y-6 animate-auth">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <a href="/Patient/List" class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+        </a>
+        <div>
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Edit Patient Profile</h1>
+            <p class="text-slate-400 text-sm">Update clinical record details for this patient</p>
+        </div>
+    </div>
+
+    <!-- Alert Box -->
+    <div id="alert-box" class="hidden text-sm p-4 rounded-xl border"></div>
+
+    <!-- Form Card -->
+    <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-8 shadow-xl">
+        <form id="patient-form" novalidate class="flex flex-col gap-5">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label for="fullName" class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Full Name *</label>
+                    <input type="text" id="fullName" name="FullName" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="John Doe" required />
+                    <div class="text-red-400 text-xs font-medium mt-1.5 min-h-[18px] ml-1" id="fullName-error"></div>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Email Address</label>
+                    <input type="email" id="email" name="Email" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="johndoe@example.com" />
+                    <div class="text-red-400 text-xs font-medium mt-1.5 min-h-[18px] ml-1" id="email-error"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label for="phoneNumber" class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Phone Number *</label>
+                    <input type="text" id="phoneNumber" name="PhoneNumber" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="+92-300-1234567" required />
+                    <div class="text-red-400 text-xs font-medium mt-1.5 min-h-[18px] ml-1" id="phoneNumber-error"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="dateOfBirth" class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Birth Date *</label>
+                        <input type="date" id="dateOfBirth" name="DateOfBirth" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all text-sm" required />
+                        <div class="text-red-400 text-xs font-medium mt-1.5 min-h-[18px] ml-1" id="dateOfBirth-error"></div>
+                    </div>
+
+                    <div>
+                        <label for="gender" class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Gender *</label>
+                        <select id="gender" name="Gender" class="w-full bg-[#141d36] border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all text-sm" required>
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="text-red-400 text-xs font-medium mt-1.5 min-h-[18px] ml-1" id="gender-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label for="address" class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Residential Address</label>
+                <textarea id="address" name="Address" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm resize-none" placeholder="123 Main St, Rawalpindi, Pakistan"></textarea>
+                <div class="text-red-400 text-xs font-medium mt-1.5 min-h-[18px] ml-1" id="address-error"></div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-4">
+                <a href="/Patient/List" class="px-5 py-3 rounded-xl text-sm font-semibold border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all">Cancel</a>
+                <button type="submit" id="submit-btn" class="px-6 py-3 rounded-xl text-sm font-semibold bg-brand-primary hover:bg-brand-primaryHover text-white shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/35 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-75 disabled:cursor-not-allowed transition-all flex items-center gap-2">
+                    <span class="btn-text">Save Changes</span>
+                    <span class="btn-spinner hidden w-5 h-5 border-2 border-white border-r-transparent rounded-full animate-spin"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('patient-form');
+            const alertBox = document.getElementById('alert-box');
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnSpinner = submitBtn.querySelector('.btn-spinner');
+
+            const token = localStorage.getItem('jwt_token');
+            const patientId = '@patientId';
+
+            // Pre-fetch existing patient details
+            async function fetchPatientDetails() {
+                try {
+                    const headers = {};
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const response = await fetch(`/api/patients/${patientId}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+
+                    if (response.status === 401) {
+                        window.location.href = '/Account/Login';
+                        return;
+                    }
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        populateForm(result.data);
+                    } else {
+                        showAlert(result.message || 'Failed to retrieve patient details.', 'error');
+                        submitBtn.disabled = true;
+                    }
+                } catch (error) {
+                    showAlert('An error occurred while communicating with the database.', 'error');
+                    submitBtn.disabled = true;
+                }
+            }
+
+            function populateForm(patient) {
+                document.getElementById('fullName').value = patient.fullName;
+                document.getElementById('email').value = patient.email || '';
+                document.getElementById('phoneNumber').value = patient.phoneNumber;
+                document.getElementById('gender').value = patient.gender;
+                document.getElementById('address').value = patient.address || '';
+                
+                // Format date to yyyy-MM-dd
+                if (patient.dateOfBirth) {
+                    const dob = new Date(patient.dateOfBirth);
+                    const yyyy = dob.getFullYear();
+                    const mm = String(dob.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dob.getDate()).padStart(2, '0');
+                    document.getElementById('dateOfBirth').value = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                resetErrors();
+
+                // Validation
+                let isValid = true;
+                const fullName = document.getElementById('fullName').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phoneNumber = document.getElementById('phoneNumber').value.trim();
+                const dateOfBirth = document.getElementById('dateOfBirth').value;
+                const gender = document.getElementById('gender').value;
+                const address = document.getElementById('address').value.trim();
+
+                if (!fullName) {
+                    showFieldError('fullName', 'Full Name is required.');
+                    isValid = false;
+                }
+
+                if (email && !validateEmail(email)) {
+                    showFieldError('email', 'Invalid email address.');
+                    isValid = false;
+                }
+
+                if (!phoneNumber) {
+                    showFieldError('phoneNumber', 'Phone Number is required.');
+                    isValid = false;
+                }
+
+                if (!dateOfBirth) {
+                    showFieldError('dateOfBirth', 'Birth Date is required.');
+                    isValid = false;
+                }
+
+                if (!gender) {
+                    showFieldError('gender', 'Gender selection is required.');
+                    isValid = false;
+                }
+
+                if (!isValid) return;
+
+                setLoading(true);
+                try {
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const response = await fetch(`/api/patients/${patientId}`, {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify({ fullName, email: email || null, phoneNumber, dateOfBirth, gender, address: address || null })
+                    });
+
+                    if (response.status === 401) {
+                        window.location.href = '/Account/Login';
+                        return;
+                    }
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showAlert('Patient record updated successfully! Returning to registry...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/Patient/List';
+                        }, 1200);
+                    } else {
+                        const message = result.message || 'Update failed.';
+                        const detail = Array.isArray(result.data) ? result.data.join('<br/>') : '';
+                        showAlert(`${message}${detail ? '<br/>' + detail : ''}`, 'error');
+                        setLoading(false);
+                    }
+                } catch (error) {
+                    showAlert('An error occurred. Please check your network connection.', 'error');
+                    setLoading(false);
+                }
+            });
+
+            function showFieldError(fieldId, message) {
+                const input = document.getElementById(fieldId);
+                const errorDiv = document.getElementById(`${fieldId}-error`);
+                input.classList.add('border-red-500', 'focus:ring-red-500/20', 'focus:border-red-500');
+                errorDiv.textContent = message;
+            }
+
+            function resetErrors() {
+                alertBox.className = 'hidden text-sm p-4 rounded-xl border';
+                alertBox.innerHTML = '';
+                document.querySelectorAll('input, select, textarea').forEach(el => {
+                    el.classList.remove('border-red-500', 'focus:ring-red-500/20', 'focus:border-red-500');
+                });
+                document.querySelectorAll('[id$="-error"]').forEach(el => el.textContent = '');
+            }
+
+            function showAlert(message, type) {
+                alertBox.className = `text-sm p-4 rounded-xl border ${type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`;
+                alertBox.innerHTML = message;
+            }
+
+            function setLoading(isLoading) {
+                if (isLoading) {
+                    submitBtn.disabled = true;
+                    btnText.classList.add('hidden');
+                    btnSpinner.classList.remove('hidden');
+                } else {
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnSpinner.classList.add('hidden');
+                }
+            }
+
+            function validateEmail(email) {
+                const re = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                return re.test(email);
+            }
+
+            // Initial fetch
+            fetchPatientDetails();
+        });
+    </script>
+}

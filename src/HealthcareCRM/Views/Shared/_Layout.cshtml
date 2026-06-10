@@ -1,0 +1,154 @@
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@{
+    var token = Context.Request.Cookies["jwt_token"];
+    string? userName = null;
+    bool isLoggedIn = false;
+    if (!string.IsNullOrEmpty(token))
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            isLoggedIn = true;
+        }
+        catch 
+        {
+            Context.Response.Cookies.Delete("jwt_token");
+        }
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Healthcare CRM</title>
+    
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif']
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#0b0f19',
+                            bgOffset: '#111827',
+                            card: 'rgba(20, 30, 54, 0.7)',
+                            primary: '#3b82f6',
+                            primaryHover: '#1d4ed8',
+                            accent: '#06b6d4',
+                            border: 'rgba(255, 255, 255, 0.08)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/HealthcareCRM.styles.css" asp-append-version="true" />
+</head>
+<body class="bg-brand-bg text-slate-100 min-h-screen flex flex-col font-sans">
+    
+    <!-- Navbar Header -->
+    <header class="sticky top-0 z-50 bg-[#0b0f19]/75 backdrop-blur-md border-b border-white/5 w-full">
+        <div class="max-w-7xl mx-auto w-full px-6 py-4 flex items-center justify-between">
+            <a class="flex items-center gap-2.5 group" asp-area="" asp-controller="Home" asp-action="Index">
+                <div class="flex items-center justify-center w-9 h-9 bg-gradient-to-tr from-brand-primary to-brand-accent rounded-xl shadow-lg shadow-brand-primary/20 group-hover:scale-105 transition-transform">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <span class="font-heading font-extrabold text-xl tracking-tight text-white">Healthcare<span class="text-brand-primary">CRM</span></span>
+            </a>
+            
+            <div class="flex items-center gap-8">
+                <nav class="hidden md:flex items-center gap-6">
+                    @if (isLoggedIn)
+                    {
+                        <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" asp-area="" asp-controller="Home" asp-action="Index">Dashboard</a>
+                        <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" href="/Patient/List">Patients</a>
+                        <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" href="/Appointment/List">Appointments</a>
+                    }
+                    else
+                    {
+                        <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                    }
+                </nav>
+                
+                <div class="flex items-center gap-4">
+                    @if (isLoggedIn)
+                    {
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-primary to-brand-accent text-white flex items-center justify-center font-bold text-sm border border-white/10 shadow-md">
+                                @(userName?.Length > 0 ? userName.Substring(0, 1).ToUpper() : "U")
+                            </div>
+                            <span class="hidden sm:inline text-sm font-semibold text-slate-200">Dr. @userName</span>
+                        </div>
+                        <a class="px-4 py-2 rounded-xl text-xs font-semibold border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" asp-controller="Account" asp-action="Logout" id="logout-btn-link">Logout</a>
+                    }
+                    else
+                    {
+                        <a class="px-4 py-2 rounded-xl text-sm font-medium text-slate-400 hover:text-white transition-colors" asp-controller="Account" asp-action="Login">Sign In</a>
+                        <a class="px-4 py-2 rounded-xl text-sm font-semibold bg-brand-primary hover:bg-brand-primaryHover text-white shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/35 transition-all hover:-translate-y-0.5" asp-controller="Account" asp-action="Register">Get Started</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container Content -->
+    <div class="flex-1 w-full flex flex-col">
+        <main class="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-brand-bgOffset border-t border-white/5 py-6 mt-12">
+        <div class="max-w-7xl mx-auto w-full px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-xs font-medium">
+            <span>&copy; 2026 - Healthcare CRM. All rights reserved.</span>
+            <div class="flex gap-4">
+                <a href="/api/health" target="_blank" class="hover:text-brand-primary transition-colors">Health API</a>
+                <span class="text-white/10">|</span>
+                <a href="/swagger" target="_blank" class="hover:text-brand-primary transition-colors">Swagger Docs</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <script>
+        (function() {
+            const token = '@token';
+            if (!token) {
+                localStorage.removeItem('jwt_token');
+                localStorage.removeItem('user_name');
+                localStorage.removeItem('user_email');
+            }
+            
+            const logoutBtn = document.getElementById('logout-btn-link');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    localStorage.removeItem('jwt_token');
+                    localStorage.removeItem('user_name');
+                    localStorage.removeItem('user_email');
+                });
+            }
+        })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
