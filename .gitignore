@@ -1,0 +1,30 @@
+# .gitignore
+# Exclude .NET build artifacts
+bin/
+obj/
+
+# Exclude IDE and user-specific files
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Exclude OS-specific files
+.DS_Store
+Thumbs.db
+
+# Exclude local environment secrets and configuration
+.env
+.env*.local
+appsettings.Development.json
+
+# Exclude SQLite databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Exclude node_modules (if any frontend dependencies are installed)
+node_modules/

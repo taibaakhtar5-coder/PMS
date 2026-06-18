@@ -1,0 +1,259 @@
+@{
+    ViewData["Title"] = "Patients";
+}
+
+<div class="space-y-6 animate-auth">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Patient Registry</h1>
+            <p class="text-slate-400 text-sm">View and manage clinical records for registered patients</p>
+        </div>
+        <div>
+            <a href="/Patient/Add" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-brand-primary hover:bg-brand-primaryHover text-white shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/35 transition-all hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                <span>Register Patient</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Box -->
+    <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-4 shadow-xl">
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.637 10.637z" /></svg>
+            </div>
+            <input type="text" id="search-input" class="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="Search patients by name, email, or phone number..." />
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                    <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        <th class="pb-3 pr-4">Full Name</th>
+                        <th class="pb-3 px-4">Contact</th>
+                        <th class="pb-3 px-4">Gender & Age</th>
+                        <th class="pb-3 px-4">Registered Date</th>
+                        <th class="pb-3 pl-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="patients-table-body" class="divide-y divide-white/5 align-middle">
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-slate-500">
+                            <span class="inline-block w-8 h-8 border-2 border-brand-primary border-r-transparent rounded-full animate-spin"></span>
+                            <p class="mt-2 text-xs font-semibold">Loading patient records...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="delete-modal-backdrop"></div>
+    <div class="relative bg-[#141d36] border border-white/10 rounded-2xl p-6 shadow-2xl w-full max-w-sm">
+        <div class="flex items-center justify-center w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-xl mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-red-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+        </div>
+        <h3 class="text-lg font-heading font-bold text-white text-center mb-1">Delete Patient</h3>
+        <p class="text-slate-400 text-sm text-center mb-6">Are you sure you want to delete <span id="delete-patient-name" class="text-white font-semibold"></span>? This action cannot be undone.</p>
+        <div class="flex gap-3">
+            <button id="delete-cancel-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all">Cancel</button>
+            <button id="delete-confirm-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-500 hover:bg-red-600 text-white transition-all flex items-center justify-center gap-2">
+                <span class="btn-text">Delete</span>
+                <span class="btn-spinner hidden w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+@@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('patients-table-body');
+            const searchInput = document.getElementById('search-input');
+            const deleteModal = document.getElementById('delete-modal');
+            const deletePatientName = document.getElementById('delete-patient-name');
+            const deleteCancelBtn = document.getElementById('delete-cancel-btn');
+            const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+            const deleteModalBackdrop = document.getElementById('delete-modal-backdrop');
+            let debounceTimer;
+            let pendingDeleteId = null;
+
+            const token = localStorage.getItem('jwt_token');
+
+            async function fetchPatients(searchQuery = '') {
+                try {
+                    const headers = {};
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const response = await fetch(`/api/patients?search=${encodeURIComponent(searchQuery)}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+
+                    if (response.status === 401) { window.location.href = '/Account/Login'; return; }
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        renderTable(result.data);
+                    } else {
+                        renderError(result.message || 'Failed to fetch patients.');
+                    }
+                } catch (error) {
+                    renderError('An error occurred while communicating with the database.');
+                }
+            }
+
+            function renderTable(patients) {
+                if (!patients || patients.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-12 text-center text-slate-500 text-sm font-medium">
+                                No patients found.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tableBody.innerHTML = patients.map(p => {
+                    const age = calculateAge(p.dateOfBirth);
+                    const formattedDate = new Date(p.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'short', day: 'numeric'
+                    });
+
+                    return `
+                        <tr class="hover:bg-white/5 transition-colors group">
+                            <td class="py-4 pr-4 font-semibold text-slate-200">
+                                ${escapeHtml(p.fullName)}
+                            </td>
+                            <td class="py-4 px-4 text-xs font-medium space-y-1">
+                                <div class="text-slate-300">${escapeHtml(p.phoneNumber)}</div>
+                                <div class="text-slate-500">${escapeHtml(p.email || 'N/A')}</div>
+                            </td>
+                            <td class="py-4 px-4 text-xs font-medium space-y-1">
+                                <div class="text-slate-300">${escapeHtml(p.gender)}</div>
+                                <div class="text-slate-500">${age} years old</div>
+                            </td>
+                            <td class="py-4 px-4 text-xs font-semibold text-slate-400">
+                                ${formattedDate}
+                            </td>
+                            <td class="py-4 pl-4 text-right">
+                                <div class="flex items-center justify-end gap-3">
+                                    <a href="/Patient/MedicalHistory/${p.id}" class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors" title="Medical History">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>
+                                        <span>History</span>
+                                    </a>
+                                    <a href="/Patient/Edit/${p.id}" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:text-brand-accent transition-colors" title="Edit Patient">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                                        <span>Edit</span>
+                                    </a>
+                                    <button onclick="openDeleteModal('${p.id}', '${escapeHtml(p.fullName).replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 transition-colors" title="Delete Patient">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            function renderError(message) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-red-400 text-sm font-semibold">
+                            ${escapeHtml(message)}
+                        </td>
+                    </tr>
+                `;
+            }
+
+            function calculateAge(dobString) {
+                const dob = new Date(dobString);
+                const diffMs = Date.now() - dob.getTime();
+                const ageDate = new Date(diffMs);
+                return Math.abs(ageDate.getUTCFullYear() - 1970);
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            // Delete modal logic
+            window.openDeleteModal = function(id, name) {
+                pendingDeleteId = id;
+                deletePatientName.textContent = name;
+                deleteModal.classList.remove('hidden');
+                deleteModal.classList.add('flex');
+            };
+
+            function closeDeleteModal() {
+                deleteModal.classList.add('hidden');
+                deleteModal.classList.remove('flex');
+                pendingDeleteId = null;
+            }
+
+            deleteCancelBtn.addEventListener('click', closeDeleteModal);
+            deleteModalBackdrop.addEventListener('click', closeDeleteModal);
+
+            deleteConfirmBtn.addEventListener('click', async () => {
+                if (!pendingDeleteId) return;
+                const btnText = deleteConfirmBtn.querySelector('.btn-text');
+                const btnSpinner = deleteConfirmBtn.querySelector('.btn-spinner');
+                deleteConfirmBtn.disabled = true;
+                btnText.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+
+                try {
+                    const headers = {};
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const response = await fetch(`/api/patients/${pendingDeleteId}`, {
+                        method: 'DELETE',
+                        headers: headers
+                    });
+
+                    if (response.status === 401) { window.location.href = '/Account/Login'; return; }
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        closeDeleteModal();
+                        fetchPatients(searchInput.value);
+                    } else {
+                        alert(result.message || 'Failed to delete patient.');
+                    }
+                } catch (error) {
+                    alert('An error occurred. Please try again.');
+                } finally {
+                    deleteConfirmBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnSpinner.classList.add('hidden');
+                }
+            });
+
+            // Debounced search
+            searchInput.addEventListener('keyup', (e) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetchPatients(e.target.value);
+                }, 300);
+            });
+
+            // Initial fetch
+            fetchPatients();
+        });
+    </script>
+}

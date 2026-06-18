@@ -1,0 +1,125 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="space-y-8 animate-auth">
+    <!-- Greeting -->
+    <div class="flex flex-col gap-1">
+        <span class="text-brand-primary text-xs font-bold tracking-wider uppercase">Overview</span>
+        <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Welcome Back, Dr. @(User.Identity?.Name ?? "User")</h1>
+        <p class="text-slate-400 text-sm">Here is the latest status of your clinic operations today.</p>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Card 1 -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl hover:border-white/10 transition-all flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400 font-semibold text-sm">Total Patients</span>
+                <div class="flex items-center justify-center w-10 h-10 bg-blue-500/10 text-blue-400 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <h2 class="text-3xl font-heading font-extrabold text-white">1,248</h2>
+                <span class="text-emerald-400 text-xs font-semibold">+4.2%</span>
+            </div>
+            <p class="text-slate-500 text-xs mt-1">Total active registered patient profiles</p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl hover:border-white/10 transition-all flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400 font-semibold text-sm">Appointments Today</span>
+                <div class="flex items-center justify-center w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <h2 class="text-3xl font-heading font-extrabold text-white">18</h2>
+                <span class="text-emerald-400 text-xs font-semibold">+12%</span>
+            </div>
+            <p class="text-slate-500 text-xs mt-1">Scheduled appointments for today</p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl hover:border-white/10 transition-all flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400 font-semibold text-sm">Pending Reports</span>
+                <div class="flex items-center justify-center w-10 h-10 bg-amber-500/10 text-amber-400 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <h2 class="text-3xl font-heading font-extrabold text-white">7</h2>
+                <span class="bg-rose-500/15 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded border border-rose-500/10 uppercase tracking-wide">Urgent</span>
+            </div>
+            <p class="text-slate-500 text-xs mt-1">Lab results requiring physician signature</p>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Schedule Table -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Schedule Table -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl lg:col-span-2">
+            <h3 class="text-lg font-heading font-bold text-white mb-5">Upcoming Schedule</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                            <th class="pb-3 pr-4">Time</th>
+                            <th class="pb-3 px-4">Patient</th>
+                            <th class="pb-3 px-4">Reason</th>
+                            <th class="pb-3 pl-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 align-middle">
+                        <tr class="hover:bg-white/5 transition-colors group">
+                            <td class="py-4 pr-4 font-semibold text-brand-primary">09:30 AM</td>
+                            <td class="py-4 px-4 font-medium text-slate-200">John Doe</td>
+                            <td class="py-4 px-4 text-slate-300">General Health Checkup</td>
+                            <td class="py-4 pl-4"><span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">Confirmed</span></td>
+                        </tr>
+                        <tr class="hover:bg-white/5 transition-colors group">
+                            <td class="py-4 pr-4 font-semibold text-brand-primary">10:15 AM</td>
+                            <td class="py-4 px-4 font-medium text-slate-200">Jane Smith</td>
+                            <td class="py-4 px-4 text-slate-300">Follow-up - Hypertension</td>
+                            <td class="py-4 pl-4"><span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">Confirmed</span></td>
+                        </tr>
+                        <tr class="hover:bg-white/5 transition-colors group">
+                            <td class="py-4 pr-4 font-semibold text-brand-primary">11:00 AM</td>
+                            <td class="py-4 px-4 font-medium text-slate-200">Robert Wilson</td>
+                            <td class="py-4 px-4 text-slate-300">Flu symptoms check</td>
+                            <td class="py-4 pl-4"><span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">Pending</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Shortcuts -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div class="space-y-4">
+                <h3 class="text-lg font-heading font-bold text-white mb-1">Quick Actions</h3>
+                
+                <a href="/Patient/Add" class="flex items-center gap-3 w-full border border-white/10 hover:border-brand-primary/40 hover:bg-white/5 text-slate-200 px-4 py-3.5 rounded-xl text-sm font-medium transition-all group">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    </div>
+                    <span>Register New Patient</span>
+                </a>
+
+                <a href="/Appointment/List?book=true" class="flex items-center gap-3 w-full border border-white/10 hover:border-brand-accent/40 hover:bg-white/5 text-slate-200 px-4 py-3.5 rounded-xl text-sm font-medium transition-all group">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-105 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="20"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                    </div>
+                    <span>Schedule Appointment</span>
+                </a>
+            </div>
+
+            <div class="text-center text-slate-500 text-xs border-t border-white/5 pt-4 mt-6">
+                Database status: <span class="text-emerald-400 font-semibold">Online</span> (SQLite)
+            </div>
+        </div>
+    </div>
+</div>
