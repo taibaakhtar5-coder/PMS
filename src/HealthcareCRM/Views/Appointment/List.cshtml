@@ -366,6 +366,12 @@
 
             // Initial fetch
             fetchAppointments();
+
+            // Live updates: poll every 5 seconds so new appointments booked by other
+            // users (Receptionist, Doctor) appear automatically without manual refresh.
+            setInterval(() => {
+                fetchAppointments();
+            }, 5000);
         });
     </script>
 }

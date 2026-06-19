@@ -254,6 +254,15 @@
 
             // Initial fetch
             fetchPatients();
+
+            // Live updates: poll every 5 seconds so new patients added by other users
+            // (Receptionist, Doctor) appear automatically without manual refresh.
+            // Skipped while user is actively typing in the search box.
+            setInterval(() => {
+                if (document.activeElement !== searchInput) {
+                    fetchPatients(searchInput.value);
+                }
+            }, 5000);
         });
     </script>
 }

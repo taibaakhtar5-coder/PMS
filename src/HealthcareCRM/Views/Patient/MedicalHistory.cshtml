@@ -410,6 +410,11 @@
             // Init
             loadPatient();
             loadHistory();
+
+            // Live updates: poll every 5 seconds so records added by other users appear automatically.
+            setInterval(() => {
+                loadHistory();
+            }, 5000);
         });
     </script>
 }
