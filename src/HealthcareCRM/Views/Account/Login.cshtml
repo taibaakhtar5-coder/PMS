@@ -96,6 +96,7 @@
                         localStorage.setItem('jwt_token', result.data.token);
                         localStorage.setItem('user_name', result.data.user.fullName);
                         localStorage.setItem('user_email', result.data.user.email);
+                        localStorage.setItem('user_role', result.data.user.role);
 
                         document.cookie = `jwt_token=${result.data.token}; path=/; max-age=604800; SameSite=Strict`; 
 

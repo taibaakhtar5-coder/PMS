@@ -20,6 +20,10 @@ namespace HealthcareCRM.Models
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
+        [Required]
+        [MaxLength(50)]
+        public string Role { get; set; } = "Receptionist"; // Admin, Doctor, Receptionist
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

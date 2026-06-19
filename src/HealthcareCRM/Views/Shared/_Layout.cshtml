@@ -93,7 +93,10 @@
                             <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-primary to-brand-accent text-white flex items-center justify-center font-bold text-sm border border-white/10 shadow-md">
                                 @(userName?.Length > 0 ? userName.Substring(0, 1).ToUpper() : "U")
                             </div>
-                            <span class="hidden sm:inline text-sm font-semibold text-slate-200">Dr. @userName</span>
+                            <div class="hidden sm:flex flex-col">
+                                <span class="text-sm font-semibold text-slate-200">@userName</span>
+                                <span id="role-badge" class="text-xs font-semibold px-1.5 py-0.5 rounded-md w-fit"></span>
+                            </div>
                         </div>
                         <a class="px-4 py-2 rounded-xl text-xs font-semibold border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all" asp-controller="Account" asp-action="Logout" id="logout-btn-link">Logout</a>
                     }
@@ -136,14 +139,31 @@
                 localStorage.removeItem('jwt_token');
                 localStorage.removeItem('user_name');
                 localStorage.removeItem('user_email');
+                localStorage.removeItem('user_role');
             }
             
+            // Show role badge
+            const roleBadge = document.getElementById('role-badge');
+            if (roleBadge) {
+                const role = localStorage.getItem('user_role') || '';
+                const roleColors = {
+                    'Admin':        'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+                    'Doctor':       'bg-brand-primary/20 text-blue-300 border border-blue-500/30',
+                    'Receptionist': 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                };
+                if (role) {
+                    roleBadge.textContent = role;
+                    roleBadge.className = `text-xs font-semibold px-1.5 py-0.5 rounded-md w-fit ${roleColors[role] || 'bg-white/10 text-slate-300'}`;
+                }
+            }
+
             const logoutBtn = document.getElementById('logout-btn-link');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', () => {
                     localStorage.removeItem('jwt_token');
                     localStorage.removeItem('user_name');
                     localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_role');
                 });
             }
         })();

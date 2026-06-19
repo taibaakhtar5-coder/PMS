@@ -24,5 +24,9 @@ namespace HealthcareCRM.Models
         [Display(Name = "Confirm Password")]
         [Compare("Password", ErrorMessage = "Passwords do not match.")]
         public string ConfirmPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Role is required.")]
+        [MaxLength(50)]
+        public string Role { get; set; } = "Receptionist";
     }
 }

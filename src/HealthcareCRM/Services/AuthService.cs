@@ -25,27 +25,25 @@ namespace HealthcareCRM.Services
             _passwordHasher = new PasswordHasher<User>();
         }
 
-        /// <summary>
-        /// Registers a new user if the email is not already taken.
-        /// </summary>
         public async Task<User?> RegisterAsync(RegisterViewModel model)
         {
             var emailLower = model.Email.Trim().ToLower();
 
-            // Check if user already exists
             if (await _context.Users.AnyAsync(u => u.Email == emailLower))
-            {
                 return null;
-            }
+
+            // Validate role
+            var allowedRoles = new[] { "Admin", "Doctor", "Receptionist" };
+            var role = allowedRoles.Contains(model.Role) ? model.Role : "Receptionist";
 
             var user = new User
             {
                 FullName = model.FullName.Trim(),
                 Email = emailLower,
+                Role = role,
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Securely hash the password
             user.PasswordHash = _passwordHasher.HashPassword(user, model.Password);
 
             _context.Users.Add(user);
@@ -54,51 +52,35 @@ namespace HealthcareCRM.Services
             return user;
         }
 
-        /// <summary>
-        /// Validates login credentials and returns the User if validation succeeds.
-        /// </summary>
         public async Task<User?> LoginAsync(LoginViewModel model)
         {
             var emailLower = model.Email.Trim().ToLower();
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == emailLower);
-            if (user == null)
-            {
-                return null;
-            }
+            if (user == null) return null;
 
-            // Verify password hash
             var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, model.Password);
-            if (verificationResult == PasswordVerificationResult.Failed)
-            {
-                return null;
-            }
+            if (verificationResult == PasswordVerificationResult.Failed) return null;
 
             return user;
         }
 
-        /// <summary>
-        /// Generates a signed JWT for the authenticated User.
-        /// </summary>
         public string GenerateJwtToken(User user)
         {
-            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET") 
-                            ?? _configuration["JWT_SECRET"] 
+            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET")
+                            ?? _configuration["JWT_SECRET"]
                             ?? "FriendswareHealthcareCRMSuperSecretKey2026ForTask2";
-            
-            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") 
-                         ?? _configuration["JWT_ISSUER"] 
+
+            var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+                         ?? _configuration["JWT_ISSUER"]
                          ?? "HealthcareCRM";
-            
-            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") 
-                           ?? _configuration["JWT_AUDIENCE"] 
+
+            var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+                           ?? _configuration["JWT_AUDIENCE"]
                            ?? "HealthcareCRMUsers";
 
-            // Ensure key is long enough for HmacSha256 (at least 256 bits)
             if (secretKey.Length < 32)
-            {
                 secretKey = secretKey.PadRight(32, '0');
-            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -108,14 +90,15 @@ namespace HealthcareCRM.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Role, user.Role)   // Role claim added
             };
 
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(7), // Token valid for 7 days
+                expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
