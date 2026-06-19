@@ -62,8 +62,8 @@
         <form id="appointment-form" novalidate class="flex flex-col gap-4">
             <div>
                 <label for="patientId" class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Select Patient *</label>
-                <select id="patientId" name="PatientId" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all text-sm" required>
-                    <option value="">Loading patients...</option>
+                <select id="patientId" name="PatientId" style="color-scheme: dark; background-color: #141d36; color: #e2e8f0;" class="w-full bg-[#141d36] border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all text-sm" required>
+                    <option value="" style="background-color: #141d36; color: #e2e8f0;">Loading patients...</option>
                 </select>
                 <div class="text-red-400 text-xs font-medium mt-1.5 min-h-[18px] ml-1" id="patientId-error"></div>
             </div>
@@ -220,16 +220,16 @@
                     const result = await response.json();
                     if (response.ok && result.success) {
                         if (result.data.length === 0) {
-                            patientSelect.innerHTML = '<option value="">No patients registered. Please register a patient first.</option>';
+                            patientSelect.innerHTML = '<option value="" style="background-color: #141d36; color: #e2e8f0;">No patients registered. Please register a patient first.</option>';
                         } else {
-                            patientSelect.innerHTML = '<option value="">-- Choose Patient --</option>' + 
-                                result.data.map(p => `<option value="${p.id}">${escapeHtml(p.fullName)} (${escapeHtml(p.phoneNumber)})</option>`).join('');
+                            patientSelect.innerHTML = '<option value="" style="background-color: #141d36; color: #e2e8f0;">-- Choose Patient --</option>' + 
+                                result.data.map(p => `<option value="${p.id}" style="background-color: #141d36; color: #e2e8f0;">${escapeHtml(p.fullName)} (${escapeHtml(p.phoneNumber)})</option>`).join('');
                         }
                     } else {
-                        patientSelect.innerHTML = '<option value="">Failed to load patients</option>';
+                        patientSelect.innerHTML = '<option value="" style="background-color: #141d36; color: #e2e8f0;">Failed to load patients</option>';
                     }
                 } catch (error) {
-                    patientSelect.innerHTML = '<option value="">Network error loading patients</option>';
+                    patientSelect.innerHTML = '<option value="" style="background-color: #141d36; color: #e2e8f0;">Network error loading patients</option>';
                 }
             }
 
