@@ -1,12 +1,30 @@
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
 @{
     ViewData["Title"] = "Dashboard";
+
+    var token = Context.Request.Cookies["jwt_token"];
+    string? userName = null;
+    string? userRole = null;
+    if (!string.IsNullOrEmpty(token))
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            userRole = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+        }
+        catch { }
+    }
+    var displayName = (userRole == "Doctor" ? "Dr. " : "") + (userName ?? "User");
 }
 
 <div class="space-y-8 animate-auth">
     <!-- Greeting -->
     <div class="flex flex-col gap-1">
         <span class="text-brand-primary text-xs font-bold tracking-wider uppercase">Overview</span>
-        <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Welcome Back, Dr. @(User.Identity?.Name ?? "User")</h1>
+        <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Welcome Back, @displayName</h1>
         <p class="text-slate-400 text-sm">Here is the latest status of your clinic operations today.</p>
     </div>
 
