@@ -24,6 +24,14 @@ namespace HealthcareCRM.Data
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
+            // Configure Appointment -> Doctor (User) relationship explicitly.
+            // Restrict on delete so removing a doctor account doesn't cascade-delete appointments.
+            modelBuilder.Entity<Appointment>()
+                .HasOne(a => a.Doctor)
+                .WithMany()
+                .HasForeignKey(a => a.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Seed a sample patient to make testing Patient CRUD or list features easier for Member B
             modelBuilder.Entity<Patient>().HasData(
                 new Patient
