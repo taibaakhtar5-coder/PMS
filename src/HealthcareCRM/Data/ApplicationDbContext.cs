@@ -43,7 +43,7 @@ namespace HealthcareCRM.Data
                     DateOfBirth = new System.DateTime(1990, 5, 15),
                     Gender = "Male",
                     Address = "Rawalpindi, Pakistan",
-                    CreatedAt = System.DateTime.UtcNow
+                    CreatedAt = new System.DateTime(2026, 6, 17, 0, 0, 0, System.DateTimeKind.Utc)
                 },
                 new Patient
                 {
@@ -54,7 +54,7 @@ namespace HealthcareCRM.Data
                     DateOfBirth = new System.DateTime(1985, 10, 20),
                     Gender = "Female",
                     Address = "Islamabad, Pakistan",
-                    CreatedAt = System.DateTime.UtcNow
+                    CreatedAt = new System.DateTime(2026, 6, 17, 0, 0, 0, System.DateTimeKind.Utc)
                 }
             );
         }

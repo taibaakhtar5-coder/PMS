@@ -1,0 +1,189 @@
+@{
+    ViewData["Title"] = "Role Management";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="space-y-6 animate-auth">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Role Management</h1>
+            <p class="text-slate-400 text-sm">Review registered physician accounts and manage authorization roles</p>
+        </div>
+    </div>
+
+    <!-- Alert Box -->
+    <div id="alert-box" class="hidden text-sm p-4 rounded-xl border"></div>
+
+    <!-- Table Card -->
+    <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                    <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        <th class="pb-3 pr-4">Physician / User</th>
+                        <th class="pb-3 px-4">Email Address</th>
+                        <th class="pb-3 px-4">Created Date</th>
+                        <th class="pb-3 px-4">Authorized Role</th>
+                        <th class="pb-3 pl-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body" class="divide-y divide-white/5 align-middle">
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-slate-500">
+                            <span class="inline-block w-8 h-8 border-2 border-brand-primary border-r-transparent rounded-full animate-spin"></span>
+                            <p class="mt-2 text-xs font-semibold">Loading users and roles...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('users-table-body');
+            const alertBox = document.getElementById('alert-box');
+            const token = localStorage.getItem('jwt_token');
+
+            async function fetchUsers() {
+                try {
+                    const headers = {};
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const response = await fetch('/api/auth/users', {
+                        method: 'GET',
+                        headers: headers
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        window.location.href = '/Account/AccessDenied';
+                        return;
+                    }
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        renderTable(result.data);
+                    } else {
+                        showAlert(result.message || 'Failed to fetch users.', 'error');
+                    }
+                } catch (error) {
+                    showAlert('An error occurred while communicating with the database.', 'error');
+                }
+            }
+
+            function renderTable(users) {
+                if (!users || users.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-12 text-center text-slate-500 text-sm font-medium">
+                                No registered users found.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tableBody.innerHTML = users.map(u => {
+                    const formattedDate = new Date(u.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+
+                    // Build dropdown select for each user
+                    return `
+                        <tr class="hover:bg-white/5 transition-colors group" id="user-row-${u.id}">
+                            <td class="py-4 pr-4 font-semibold text-slate-200">
+                                ${escapeHtml(u.fullName)}
+                            </td>
+                            <td class="py-4 px-4 text-xs font-medium text-slate-400">
+                                ${escapeHtml(u.email)}
+                            </td>
+                            <td class="py-4 px-4 text-xs font-semibold text-slate-400">
+                                ${formattedDate}
+                            </td>
+                            <td class="py-4 px-4">
+                                <select id="role-select-${u.id}" class="bg-[#141d36] border border-white/10 rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none focus:border-brand-primary text-xs font-semibold">
+                                    <option value="Doctor" ${u.role === 'Doctor' ? 'selected' : ''}>Doctor</option>
+                                    <option value="Receptionist" ${u.role === 'Receptionist' ? 'selected' : ''}>Receptionist</option>
+                                    <option value="Admin" ${u.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                                </select>
+                            </td>
+                            <td class="py-4 pl-4 text-right">
+                                <button onclick="saveUserRole('${u.id}')" id="save-btn-${u.id}" class="inline-flex items-center gap-1 bg-brand-primary/10 border border-brand-primary/20 hover:bg-brand-primary text-brand-primary hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
+                                    <span>Update</span>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Global handler for saving roles
+            window.saveUserRole = async function(userId) {
+                const select = document.getElementById(`role-select-${userId}`);
+                const saveBtn = document.getElementById(`save-btn-${userId}`);
+                const role = select.value;
+
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = 'Saving...';
+
+                try {
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+
+                    const response = await fetch(`/api/auth/users/${userId}/role`, {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify({ role })
+                    });
+
+                    if (response.status === 401 || response.status === 403) {
+                        window.location.href = '/Account/AccessDenied';
+                        return;
+                    }
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        showAlert(`Role for ${result.data.fullName} updated to ${result.data.role} successfully!`, 'success');
+                    } else {
+                        showAlert(result.message || 'Failed to update user role.', 'error');
+                    }
+                } catch (error) {
+                    showAlert('An error occurred while updating the role.', 'error');
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = 'Update';
+                }
+            };
+
+            function showAlert(message, type) {
+                alertBox.className = `text-sm p-4 rounded-xl mb-6 border ${type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`;
+                alertBox.innerHTML = message;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            // Initial fetch
+            fetchUsers();
+        });
+    </script>
+}

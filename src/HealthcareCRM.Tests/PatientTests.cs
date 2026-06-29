@@ -175,5 +175,63 @@ namespace HealthcareCRM.Tests
             Assert.False(doc.RootElement.GetProperty("success").GetBoolean());
             Assert.Equal("Validation failed.", doc.RootElement.GetProperty("message").GetString());
         }
+
+        [Fact]
+        public async Task GetPatientMedicalHistory_WithValidPatientId_ReturnsMedicalHistory()
+        {
+            // Arrange
+            using var context = new ApplicationDbContext(_dbContextOptions);
+            var controller = new PatientsController(context);
+            var patientId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // Seeded John Doe
+
+            // Add a medical history record
+            var historyRecord = new MedicalHistory
+            {
+                Id = Guid.NewGuid(),
+                PatientId = patientId,
+                Diagnosis = "Hypertension",
+                Treatment = "Lisinopril 10mg daily",
+                DoctorName = "Doctor House",
+                VisitDate = DateTime.Today.AddDays(-5),
+                CreatedAt = DateTime.UtcNow
+            };
+            context.MedicalHistories.Add(historyRecord);
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await controller.GetPatientMedicalHistory(patientId);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var json = JsonSerializer.Serialize(okResult.Value);
+            using var doc = JsonDocument.Parse(json);
+            Assert.True(doc.RootElement.GetProperty("success").GetBoolean());
+            
+            var dataJson = doc.RootElement.GetProperty("data").GetRawText();
+            var records = JsonSerializer.Deserialize<List<MedicalHistory>>(dataJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            Assert.NotNull(records);
+            Assert.Single(records);
+            Assert.Equal("Hypertension", records[0].Diagnosis);
+            Assert.Equal("Doctor House", records[0].DoctorName);
+        }
+
+        [Fact]
+        public async Task GetPatientMedicalHistory_WithNonExistentPatientId_ReturnsNotFound()
+        {
+            // Arrange
+            using var context = new ApplicationDbContext(_dbContextOptions);
+            var controller = new PatientsController(context);
+            var nonExistentId = Guid.NewGuid();
+
+            // Act
+            var result = await controller.GetPatientMedicalHistory(nonExistentId);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var json = JsonSerializer.Serialize(notFoundResult.Value);
+            using var doc = JsonDocument.Parse(json);
+            Assert.False(doc.RootElement.GetProperty("success").GetBoolean());
+            Assert.Equal("Patient not found.", doc.RootElement.GetProperty("message").GetString());
+        }
     }
 }

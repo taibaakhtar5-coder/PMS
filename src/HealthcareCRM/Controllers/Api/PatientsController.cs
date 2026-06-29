@@ -24,7 +24,7 @@ namespace HealthcareCRM.Controllers.Api
 
         /// <summary>
         /// GET /api/patients
-        /// Retrieves a list of patients, optionally filtered by a search query.
+        /// Retrieves a list of patients, optionally filtered by a search query (checks FullName, Email, and PhoneNumber).
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetPatients([FromQuery] string? search)
@@ -194,6 +194,47 @@ namespace HealthcareCRM.Controllers.Api
                 data = patient,
                 message = "Patient details updated successfully."
             });
+        }
+
+        /// <summary>
+        /// GET /api/patients/{id}/medical-history
+        /// Retrieves all medical history records for a specific patient.
+        /// </summary>
+        [HttpGet("{id:guid}/medical-history")]
+        public async Task<IActionResult> GetPatientMedicalHistory(Guid id)
+        {
+            var patientExists = await _context.Patients.AnyAsync(p => p.Id == id);
+            if (!patientExists)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    data = (object?)null,
+                    message = "Patient not found."
+                });
+            }
+
+            var records = await _context.MedicalHistories
+                .Where(m => m.PatientId == id)
+                .OrderByDescending(m => m.VisitDate)
+                .ToListAsync();
+
+            return Ok(new
+            {
+                success = true,
+                data = records,
+                message = "Patient medical history retrieved successfully."
+            });
+        }
+
+        /// <summary>
+        /// GET /api/patients/{id}/medicalhistory
+        /// Alias for GET /api/patients/{id}/medical-history.
+        /// </summary>
+        [HttpGet("{id:guid}/medicalhistory")]
+        public async Task<IActionResult> GetPatientMedicalHistoryAlias(Guid id)
+        {
+            return await GetPatientMedicalHistory(id);
         }
     }
 }
