@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="flex items-center justify-center min-h-[calc(100vh-240px)] py-8">
+    <div class="bg-brand-card backdrop-blur-lg rounded-2xl border border-white/5 shadow-2xl p-8 w-full max-w-md text-center flex flex-col items-center gap-6 animate-auth">
+        <!-- Error Shield Icon -->
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-red-500/10 text-red-400 rounded-full border border-red-500/20 shadow-lg shadow-red-500/5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" /></svg>
+        </div>
+        
+        <!-- Headers -->
+        <div class="space-y-2">
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Access Denied</h1>
+            <p class="text-slate-400 text-sm">You do not have the required permissions to view this resource.</p>
+        </div>
+        
+        <hr class="w-full border-white/5" />
+
+        <div class="flex flex-col gap-2 w-full">
+            <a href="/" class="w-full bg-gradient-to-tr from-brand-primary to-brand-primaryHover text-white font-semibold py-3 rounded-xl shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/35 hover:-translate-y-0.5 active:translate-y-0 transition-all text-sm flex items-center justify-center gap-2">
+                <span>Go to Dashboard</span>
+            </a>
+            <a href="/Account/Login" class="w-full bg-white/5 border border-white/10 text-slate-300 font-semibold py-3 rounded-xl hover:bg-white/10 hover:text-white transition-all text-sm">
+                Sign In with Different Account
+            </a>
+        </div>
+    </div>
+</div>

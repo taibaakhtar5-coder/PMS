@@ -1,0 +1,420 @@
+@{
+    ViewData["Title"] = "Medical History";
+    var patientId = ViewBag.PatientId;
+}
+
+<div class="space-y-6 animate-auth">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <a href="/Patient/List" class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Medical History</h1>
+            <p id="patient-subtitle" class="text-slate-400 text-sm">Loading patient information...</p>
+        </div>
+        <button id="add-record-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-brand-primary hover:bg-brand-primaryHover text-white shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/35 transition-all hover:-translate-y-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+            <span>Add Record</span>
+        </button>
+    </div>
+
+    <!-- Alert Box -->
+    <div id="alert-box" class="hidden text-sm p-4 rounded-xl border"></div>
+
+    <!-- Medical History Table -->
+    <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                    <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        <th class="pb-3 pr-4">Visit Date</th>
+                        <th class="pb-3 px-4">Diagnosis</th>
+                        <th class="pb-3 px-4">Treatment</th>
+                        <th class="pb-3 px-4">Doctor</th>
+                        <th class="pb-3 px-4">Notes</th>
+                        <th class="pb-3 pl-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="history-table-body" class="divide-y divide-white/5 align-middle">
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-slate-500">
+                            <span class="inline-block w-8 h-8 border-2 border-brand-primary border-r-transparent rounded-full animate-spin"></span>
+                            <p class="mt-2 text-xs font-semibold">Loading medical history...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Record Modal -->
+<div id="record-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-backdrop"></div>
+    <div class="relative bg-[#141d36] border border-white/10 rounded-2xl p-6 shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-5">
+            <h3 id="modal-title" class="text-lg font-heading font-bold text-white">Add Medical Record</h3>
+            <button id="modal-close-btn" class="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <div id="modal-alert" class="hidden text-sm p-3 rounded-xl border mb-4"></div>
+
+        <div class="flex flex-col gap-4">
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Visit Date *</label>
+                <input type="date" id="m-visitDate" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all text-sm" required />
+                <div class="text-red-400 text-xs font-medium mt-1 ml-1 min-h-[16px]" id="m-visitDate-error"></div>
+            </div>
+
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Diagnosis *</label>
+                <input type="text" id="m-diagnosis" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="e.g. Hypertension, Type 2 Diabetes" required />
+                <div class="text-red-400 text-xs font-medium mt-1 ml-1 min-h-[16px]" id="m-diagnosis-error"></div>
+            </div>
+
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Treatment</label>
+                <input type="text" id="m-treatment" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="e.g. Amlodipine 5mg daily" />
+            </div>
+
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Doctor Name</label>
+                <input type="text" id="m-doctorName" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="e.g. Dr. Ahmed Khan" />
+            </div>
+
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Notes</label>
+                <textarea id="m-notes" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm resize-none" placeholder="Additional clinical notes..."></textarea>
+            </div>
+
+            <div class="flex gap-3 mt-2">
+                <button id="modal-cancel-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all">Cancel</button>
+                <button id="modal-save-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-brand-primary hover:bg-brand-primaryHover text-white shadow-lg shadow-brand-primary/20 transition-all flex items-center justify-center gap-2">
+                    <span class="btn-text">Save Record</span>
+                    <span class="btn-spinner hidden w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="delete-modal-backdrop"></div>
+    <div class="relative bg-[#141d36] border border-white/10 rounded-2xl p-6 shadow-2xl w-full max-w-sm">
+        <div class="flex items-center justify-center w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-xl mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-red-400"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+        </div>
+        <h3 class="text-lg font-heading font-bold text-white text-center mb-1">Delete Record</h3>
+        <p class="text-slate-400 text-sm text-center mb-6">Are you sure you want to delete this medical history record? This cannot be undone.</p>
+        <div class="flex gap-3">
+            <button id="del-cancel-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all">Cancel</button>
+            <button id="del-confirm-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-500 hover:bg-red-600 text-white transition-all flex items-center justify-center gap-2">
+                <span class="btn-text">Delete</span>
+                <span class="btn-spinner hidden w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+@@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const patientId = '@patientId';
+            const token = localStorage.getItem('jwt_token');
+
+            // DOM refs
+            const historyTableBody = document.getElementById('history-table-body');
+            const patientSubtitle = document.getElementById('patient-subtitle');
+            const alertBox = document.getElementById('alert-box');
+            const addRecordBtn = document.getElementById('add-record-btn');
+            const recordModal = document.getElementById('record-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalAlert = document.getElementById('modal-alert');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const modalSaveBtn = document.getElementById('modal-save-btn');
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            const deleteModal = document.getElementById('delete-modal');
+            const delCancelBtn = document.getElementById('del-cancel-btn');
+            const delConfirmBtn = document.getElementById('del-confirm-btn');
+            const deleteModalBackdrop = document.getElementById('delete-modal-backdrop');
+
+            let editingRecordId = null;
+            let pendingDeleteId = null;
+
+            function authHeaders(json = false) {
+                const h = {};
+                if (token) h['Authorization'] = `Bearer ${token}`;
+                if (json) h['Content-Type'] = 'application/json';
+                return h;
+            }
+
+            // Load patient name
+            async function loadPatient() {
+                try {
+                    const r = await fetch(`/api/patients/${patientId}`, { headers: authHeaders() });
+                    if (r.status === 401) { window.location.href = '/Account/Login'; return; }
+                    const res = await r.json();
+                    if (res.success) {
+                        patientSubtitle.textContent = `Clinical records for ${res.data.fullName}`;
+                    }
+                } catch {}
+            }
+
+            // Load history records
+            async function loadHistory() {
+                try {
+                    const r = await fetch(`/api/medical-history/${patientId}`, { headers: authHeaders() });
+                    if (r.status === 401) { window.location.href = '/Account/Login'; return; }
+                    const res = await r.json();
+                    if (r.ok && res.success) {
+                        renderTable(res.data);
+                    } else {
+                        renderTableError(res.message || 'Failed to load records.');
+                    }
+                } catch {
+                    renderTableError('An error occurred while loading records.');
+                }
+            }
+
+            function renderTable(records) {
+                if (!records || records.length === 0) {
+                    historyTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="py-12 text-center text-slate-500 text-sm font-medium">
+                                No medical history records found. Click "Add Record" to create one.
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                historyTableBody.innerHTML = records.map(rec => {
+                    const visitDate = new Date(rec.visitDate).toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'short', day: 'numeric'
+                    });
+                    return `
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="py-4 pr-4 text-xs font-semibold text-slate-300 whitespace-nowrap">${visitDate}</td>
+                            <td class="py-4 px-4 text-sm font-semibold text-slate-200">${escapeHtml(rec.diagnosis)}</td>
+                            <td class="py-4 px-4 text-xs text-slate-400">${escapeHtml(rec.treatment || '—')}</td>
+                            <td class="py-4 px-4 text-xs text-slate-400">${escapeHtml(rec.doctorName || '—')}</td>
+                            <td class="py-4 px-4 text-xs text-slate-500 max-w-[180px] truncate" title="${escapeHtml(rec.notes || '')}">${escapeHtml(rec.notes || '—')}</td>
+                            <td class="py-4 pl-4 text-right">
+                                <div class="flex items-center justify-end gap-3">
+                                    <button onclick="openEditModal(${JSON.stringify(rec).replace(/"/g, '&quot;')})" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-primary hover:text-brand-accent transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                                        Edit
+                                    </button>
+                                    <button onclick="openDeleteModal('${rec.id}')" class="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 hover:text-red-300 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                }).join('');
+            }
+
+            function renderTableError(msg) {
+                historyTableBody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-red-400 text-sm font-semibold">${escapeHtml(msg)}</td></tr>`;
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+            }
+
+            // Modal open/close
+            function openAddModal() {
+                editingRecordId = null;
+                modalTitle.textContent = 'Add Medical Record';
+                modalSaveBtn.querySelector('.btn-text').textContent = 'Save Record';
+                clearModalForm();
+                modalAlert.className = 'hidden text-sm p-3 rounded-xl border mb-4';
+                recordModal.classList.remove('hidden');
+                recordModal.classList.add('flex');
+            }
+
+            window.openEditModal = function(rec) {
+                editingRecordId = rec.id;
+                modalTitle.textContent = 'Edit Medical Record';
+                modalSaveBtn.querySelector('.btn-text').textContent = 'Update Record';
+                modalAlert.className = 'hidden text-sm p-3 rounded-xl border mb-4';
+                // Format date
+                const d = new Date(rec.visitDate);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                document.getElementById('m-visitDate').value = `${yyyy}-${mm}-${dd}`;
+                document.getElementById('m-diagnosis').value = rec.diagnosis || '';
+                document.getElementById('m-treatment').value = rec.treatment || '';
+                document.getElementById('m-doctorName').value = rec.doctorName || '';
+                document.getElementById('m-notes').value = rec.notes || '';
+                recordModal.classList.remove('hidden');
+                recordModal.classList.add('flex');
+            };
+
+            function closeModal() {
+                recordModal.classList.add('hidden');
+                recordModal.classList.remove('flex');
+                editingRecordId = null;
+            }
+
+            function clearModalForm() {
+                document.getElementById('m-visitDate').value = '';
+                document.getElementById('m-diagnosis').value = '';
+                document.getElementById('m-treatment').value = '';
+                document.getElementById('m-doctorName').value = '';
+                document.getElementById('m-notes').value = '';
+                document.querySelectorAll('[id$="-error"]').forEach(e => e.textContent = '');
+            }
+
+            addRecordBtn.addEventListener('click', openAddModal);
+            modalCancelBtn.addEventListener('click', closeModal);
+            modalCloseBtn.addEventListener('click', closeModal);
+            modalBackdrop.addEventListener('click', closeModal);
+
+            // Save record
+            modalSaveBtn.addEventListener('click', async () => {
+                const visitDate = document.getElementById('m-visitDate').value;
+                const diagnosis = document.getElementById('m-diagnosis').value.trim();
+                const treatment = document.getElementById('m-treatment').value.trim();
+                const doctorName = document.getElementById('m-doctorName').value.trim();
+                const notes = document.getElementById('m-notes').value.trim();
+
+                // Validate
+                let valid = true;
+                document.getElementById('m-visitDate-error').textContent = '';
+                document.getElementById('m-diagnosis-error').textContent = '';
+
+                if (!visitDate) {
+                    document.getElementById('m-visitDate-error').textContent = 'Visit date is required.';
+                    valid = false;
+                }
+                if (!diagnosis) {
+                    document.getElementById('m-diagnosis-error').textContent = 'Diagnosis is required.';
+                    valid = false;
+                }
+                if (!valid) return;
+
+                const btnText = modalSaveBtn.querySelector('.btn-text');
+                const btnSpinner = modalSaveBtn.querySelector('.btn-spinner');
+                modalSaveBtn.disabled = true;
+                btnText.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+
+                const payload = {
+                    patientId: patientId,
+                    visitDate: visitDate,
+                    diagnosis: diagnosis,
+                    treatment: treatment || null,
+                    doctorName: doctorName || null,
+                    notes: notes || null
+                };
+
+                try {
+                    let url = '/api/medical-history';
+                    let method = 'POST';
+                    if (editingRecordId) {
+                        url = `/api/medical-history/${editingRecordId}`;
+                        method = 'PUT';
+                    }
+
+                    const r = await fetch(url, {
+                        method: method,
+                        headers: authHeaders(true),
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (r.status === 401) { window.location.href = '/Account/Login'; return; }
+
+                    const res = await r.json();
+                    if (r.ok && res.success) {
+                        closeModal();
+                        loadHistory();
+                        showPageAlert(editingRecordId ? 'Record updated successfully.' : 'Record added successfully.', 'success');
+                    } else {
+                        const msg = res.message || 'Failed to save record.';
+                        modalAlert.className = 'text-sm p-3 rounded-xl border mb-4 bg-red-500/10 border-red-500/20 text-red-400';
+                        modalAlert.textContent = msg;
+                    }
+                } catch {
+                    modalAlert.className = 'text-sm p-3 rounded-xl border mb-4 bg-red-500/10 border-red-500/20 text-red-400';
+                    modalAlert.textContent = 'An error occurred. Please try again.';
+                } finally {
+                    modalSaveBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnSpinner.classList.add('hidden');
+                }
+            });
+
+            // Delete modal
+            window.openDeleteModal = function(id) {
+                pendingDeleteId = id;
+                deleteModal.classList.remove('hidden');
+                deleteModal.classList.add('flex');
+            };
+
+            function closeDeleteModal() {
+                deleteModal.classList.add('hidden');
+                deleteModal.classList.remove('flex');
+                pendingDeleteId = null;
+            }
+
+            delCancelBtn.addEventListener('click', closeDeleteModal);
+            deleteModalBackdrop.addEventListener('click', closeDeleteModal);
+
+            delConfirmBtn.addEventListener('click', async () => {
+                if (!pendingDeleteId) return;
+                const btnText = delConfirmBtn.querySelector('.btn-text');
+                const btnSpinner = delConfirmBtn.querySelector('.btn-spinner');
+                delConfirmBtn.disabled = true;
+                btnText.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+
+                try {
+                    const r = await fetch(`/api/medical-history/${pendingDeleteId}`, {
+                        method: 'DELETE',
+                        headers: authHeaders()
+                    });
+                    if (r.status === 401) { window.location.href = '/Account/Login'; return; }
+                    const res = await r.json();
+                    if (r.ok && res.success) {
+                        closeDeleteModal();
+                        loadHistory();
+                        showPageAlert('Record deleted successfully.', 'success');
+                    } else {
+                        alert(res.message || 'Failed to delete record.');
+                    }
+                } catch {
+                    alert('An error occurred. Please try again.');
+                } finally {
+                    delConfirmBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnSpinner.classList.add('hidden');
+                }
+            });
+
+            function showPageAlert(msg, type) {
+                alertBox.className = `text-sm p-4 rounded-xl border ${type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`;
+                alertBox.textContent = msg;
+                setTimeout(() => {
+                    alertBox.className = 'hidden text-sm p-4 rounded-xl border';
+                }, 3000);
+            }
+
+            // Init
+            loadPatient();
+            loadHistory();
+
+            // Live updates: poll every 5 seconds so records added by other users appear automatically.
+            setInterval(() => {
+                loadHistory();
+            }, 5000);
+        });
+    </script>
+}

@@ -1,0 +1,243 @@
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Dashboard";
+
+    var token = Context.Request.Cookies["jwt_token"];
+    string? userName = null;
+    string? userRole = null;
+    if (!string.IsNullOrEmpty(token))
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            userName = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            userRole = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+        }
+        catch { }
+    }
+    var displayName = (userRole == "Doctor" ? "Dr. " : "") + (userName ?? "User");
+}
+
+<div class="space-y-8 animate-auth">
+    <!-- Greeting -->
+    <div class="flex flex-col gap-1">
+        <span class="text-brand-primary text-xs font-bold tracking-wider uppercase">Overview</span>
+        <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Welcome Back, @displayName</h1>
+        <p class="text-slate-400 text-sm">Here is the latest status of your clinic operations today.</p>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Card 1 -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl hover:border-white/10 transition-all flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400 font-semibold text-sm">Total Patients</span>
+                <div class="flex items-center justify-center w-10 h-10 bg-blue-500/10 text-blue-400 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <h2 id="stat-total-patients" class="text-3xl font-heading font-extrabold text-white">—</h2>
+            </div>
+            <p class="text-slate-500 text-xs mt-1">Total active registered patient profiles</p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl hover:border-white/10 transition-all flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400 font-semibold text-sm">Appointments Today</span>
+                <div class="flex items-center justify-center w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <h2 id="stat-today-appointments" class="text-3xl font-heading font-extrabold text-white">—</h2>
+            </div>
+            <p class="text-slate-500 text-xs mt-1">Scheduled appointments for today</p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl hover:border-white/10 transition-all flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400 font-semibold text-sm">Total Appointments</span>
+                <div class="flex items-center justify-center w-10 h-10 bg-amber-500/10 text-amber-400 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+            </div>
+            <div class="flex items-baseline gap-2">
+                <h2 id="stat-total-appointments" class="text-3xl font-heading font-extrabold text-white">—</h2>
+            </div>
+            <p class="text-slate-500 text-xs mt-1">All appointments scheduled, completed, or cancelled</p>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Schedule Table -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Schedule Table -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl lg:col-span-2">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-heading font-bold text-white">Upcoming Schedule</h3>
+                <span class="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Live
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                            <th class="pb-3 pr-4">Time</th>
+                            <th class="pb-3 px-4">Patient</th>
+                            <th class="pb-3 px-4">Reason</th>
+                            <th class="pb-3 pl-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard-schedule-body" class="divide-y divide-white/5 align-middle">
+                        <tr>
+                            <td colspan="4" class="py-10 text-center text-slate-500">
+                                <span class="inline-block w-6 h-6 border-2 border-brand-primary border-r-transparent rounded-full animate-spin"></span>
+                                <p class="mt-2 text-xs font-semibold">Loading schedule...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Shortcuts -->
+        <div class="bg-brand-card backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+            <div class="space-y-4">
+                <h3 class="text-lg font-heading font-bold text-white mb-1">Quick Actions</h3>
+                
+                <a href="/Patient/Add" class="flex items-center gap-3 w-full border border-white/10 hover:border-brand-primary/40 hover:bg-white/5 text-slate-200 px-4 py-3.5 rounded-xl text-sm font-medium transition-all group">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 group-hover:scale-105 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                    </div>
+                    <span>Register New Patient</span>
+                </a>
+
+                <a href="/Appointment/List?book=true" class="flex items-center gap-3 w-full border border-white/10 hover:border-brand-accent/40 hover:bg-white/5 text-slate-200 px-4 py-3.5 rounded-xl text-sm font-medium transition-all group">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-105 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="20"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+                    </div>
+                    <span>Schedule Appointment</span>
+                </a>
+            </div>
+
+            <div class="text-center text-slate-500 text-xs border-t border-white/5 pt-4 mt-6">
+                Database status: <span class="text-emerald-400 font-semibold">Online</span> (SQLite)
+            </div>
+        </div>
+    </div>
+</div>
+
+@@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('jwt_token');
+            const scheduleBody = document.getElementById('dashboard-schedule-body');
+            const statTotalPatients = document.getElementById('stat-total-patients');
+            const statTodayAppointments = document.getElementById('stat-today-appointments');
+            const statTotalAppointments = document.getElementById('stat-total-appointments');
+
+            function authHeaders() {
+                const h = {};
+                if (token) h['Authorization'] = `Bearer ${token}`;
+                return h;
+            }
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+            }
+
+            function statusBadge(status) {
+                const map = {
+                    'Scheduled': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+                    'Completed': 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+                    'Cancelled': 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                };
+                const cls = map[status] || 'bg-amber-500/10 border-amber-500/20 text-amber-400';
+                return `<span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg border ${cls}">${escapeHtml(status)}</span>`;
+            }
+
+            async function loadDashboard() {
+                try {
+                    const [patientsRes, appointmentsRes] = await Promise.all([
+                        fetch('/api/patients', { headers: authHeaders() }),
+                        fetch('/api/appointments', { headers: authHeaders() })
+                    ]);
+
+                    if (patientsRes.status === 401 || appointmentsRes.status === 401) {
+                        window.location.href = '/Account/Login';
+                        return;
+                    }
+
+                    const patientsResult = await patientsRes.json();
+                    const appointmentsResult = await appointmentsRes.json();
+
+                    if (patientsResult.success) {
+                        statTotalPatients.textContent = patientsResult.data.length;
+                    }
+
+                    if (appointmentsResult.success) {
+                        const appointments = appointmentsResult.data;
+                        statTotalAppointments.textContent = appointments.length;
+
+                        const todayStr = new Date().toDateString();
+                        const todaysAppointments = appointments.filter(a => new Date(a.appointmentDate).toDateString() === todayStr);
+                        statTodayAppointments.textContent = todaysAppointments.length;
+
+                        renderSchedule(appointments);
+                    }
+                } catch (error) {
+                    // Silently keep last known values on transient network errors
+                }
+            }
+
+            function renderSchedule(appointments) {
+                // Show the soonest upcoming appointments first (max 6)
+                const now = new Date();
+                const upcoming = appointments
+                    .filter(a => new Date(a.appointmentDate) >= now && a.status !== 'Cancelled')
+                    .sort((a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate))
+                    .slice(0, 6);
+
+                const list = upcoming.length > 0 ? upcoming : appointments.slice(0, 6);
+
+                if (!list || list.length === 0) {
+                    scheduleBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="py-10 text-center text-slate-500 text-sm font-medium">
+                                No appointments scheduled yet.
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                scheduleBody.innerHTML = list.map(a => {
+                    const dt = new Date(a.appointmentDate);
+                    const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const patientName = a.patient ? a.patient.fullName : 'Unknown';
+                    return `
+                        <tr class="hover:bg-white/5 transition-colors group">
+                            <td class="py-4 pr-4 font-semibold text-brand-primary whitespace-nowrap">${dateStr}, ${timeStr}</td>
+                            <td class="py-4 px-4 font-medium text-slate-200">${escapeHtml(patientName)}</td>
+                            <td class="py-4 px-4 text-slate-300">${escapeHtml(a.reason || '—')}</td>
+                            <td class="py-4 pl-4">${statusBadge(a.status)}</td>
+                        </tr>`;
+                }).join('');
+            }
+
+            // Initial load
+            loadDashboard();
+
+            // Live updates: poll every 5 seconds so new patients/appointments added by
+            // any user (Receptionist, Doctor, Admin) reflect here automatically.
+            setInterval(loadDashboard, 5000);
+        });
+    </script>
+}
