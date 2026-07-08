@@ -14,6 +14,9 @@ namespace HealthcareCRM.Data
         public DbSet<Patient> Patients { get; set; } = null!;
         public DbSet<Appointment> Appointments { get; set; } = null!;
         public DbSet<MedicalHistory> MedicalHistories { get; set; } = null!;
+        public DbSet<Invoice> Invoices { get; set; } = null!;
+        public DbSet<InvoiceItem> InvoiceItems { get; set; } = null!;
+        public DbSet<Payment> Payments { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +34,32 @@ namespace HealthcareCRM.Data
                 .WithMany()
                 .HasForeignKey(a => a.DoctorId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Invoice -> Appointment: optional FK, restrict delete
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Appointment)
+                .WithMany()
+                .HasForeignKey(i => i.AppointmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // InvoiceItem -> Invoice: cascade delete (items removed when invoice removed)
+            modelBuilder.Entity<InvoiceItem>()
+                .HasOne(ii => ii.Invoice)
+                .WithMany(i => i.Items)
+                .HasForeignKey(ii => ii.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Payment -> Invoice: cascade delete
+            modelBuilder.Entity<Payment>()
+                .HasOne(p => p.Invoice)
+                .WithMany(i => i.Payments)
+                .HasForeignKey(p => p.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique index on InvoiceNumber
+            modelBuilder.Entity<Invoice>()
+                .HasIndex(i => i.InvoiceNumber)
+                .IsUnique();
 
             // Seed a sample patient to make testing Patient CRUD or list features easier for Member B
             modelBuilder.Entity<Patient>().HasData(

@@ -1,0 +1,335 @@
+@{
+    ViewData["Title"] = "Invoice Detail";
+    var invoiceId = ViewBag.InvoiceId;
+}
+
+<div class="space-y-6 animate-auth">
+    <!-- Header -->
+    <div class="flex items-center gap-4">
+        <a href="/Billing/List" class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Invoice Detail</h1>
+            <p id="inv-subtitle" class="text-slate-400 text-sm">Loading invoice...</p>
+        </div>
+        <div id="header-actions" class="flex gap-3"></div>
+    </div>
+
+    <!-- Alert -->
+    <div id="page-alert" class="hidden text-sm p-4 rounded-xl border"></div>
+
+    <!-- Invoice Card -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left: Invoice Info + Items -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Invoice Info -->
+            <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+                <div id="invoice-info" class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                    <p class="text-slate-500 col-span-3 text-xs font-semibold">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-heading font-bold text-white mb-4">Invoice Items</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/5 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                                <th class="pb-3 pr-4">Description</th>
+                                <th class="pb-3 px-4 text-right">Unit Price</th>
+                                <th class="pb-3 px-4 text-right">Qty</th>
+                                <th class="pb-3 pl-4 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-table" class="divide-y divide-white/5">
+                            <tr><td colspan="4" class="py-6 text-center text-slate-500 text-xs">Loading items...</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t border-white/10">
+                                <td colspan="3" class="pt-4 pr-4 text-right text-sm font-semibold text-slate-300">Total Amount</td>
+                                <td class="pt-4 pl-4 text-right text-lg font-extrabold text-white" id="items-total">—</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Payment Summary + History -->
+        <div class="space-y-6">
+
+            <!-- Payment Summary -->
+            <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-heading font-bold text-white mb-4">Payment Summary</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Total</span>
+                        <span id="summary-total" class="text-white font-semibold text-sm">—</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">Paid</span>
+                        <span id="summary-paid" class="text-emerald-400 font-semibold text-sm">—</span>
+                    </div>
+                    <div class="border-t border-white/10 pt-3 flex justify-between items-center">
+                        <span class="text-slate-300 text-sm font-semibold">Balance</span>
+                        <span id="summary-balance" class="text-rose-400 font-bold text-lg">—</span>
+                    </div>
+                    <div class="pt-1">
+                        <div id="summary-status-badge" class="inline-flex px-3 py-1.5 text-xs font-bold rounded-xl border w-full justify-center"></div>
+                    </div>
+                </div>
+                <div id="pay-action-btn" class="mt-4"></div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-heading font-bold text-white mb-4">Payment History</h3>
+                <div id="payment-history" class="space-y-3 text-sm text-slate-500">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="payment-backdrop"></div>
+    <div class="relative bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl p-6 w-full max-w-md">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="text-lg font-heading font-bold text-white">Record Payment</h3>
+                <p class="text-slate-400 text-xs mt-0.5">Balance: <span id="pay-balance-detail" class="text-white font-semibold"></span></p>
+            </div>
+            <button id="close-pay-modal" class="text-slate-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        <div id="pay-modal-alert" class="hidden text-sm p-4 rounded-xl border mb-4"></div>
+        <div class="flex flex-col gap-4">
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Amount (Rs.) *</label>
+                <input type="number" id="pay-amount" min="0.01" step="0.01" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all text-sm" placeholder="0.00" />
+                <div class="text-red-400 text-xs mt-1 min-h-[16px]" id="pay-amount-error"></div>
+            </div>
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Payment Method *</label>
+                <select id="pay-method" style="color-scheme: dark; background-color: #141d36; color: #e2e8f0;" class="w-full border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all text-sm">
+                    <option value="Cash" style="background-color: #141d36; color: #e2e8f0;">Cash</option>
+                    <option value="Card" style="background-color: #141d36; color: #e2e8f0;">Card</option>
+                    <option value="Bank Transfer" style="background-color: #141d36; color: #e2e8f0;">Bank Transfer</option>
+                    <option value="Online" style="background-color: #141d36; color: #e2e8f0;">Online</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Reference (Optional)</label>
+                <input type="text" id="pay-reference" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 transition-all placeholder:text-slate-600 text-sm" placeholder="Transaction ID, cheque number..." />
+            </div>
+            <div class="flex gap-3 mt-2">
+                <button id="cancel-pay-modal" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all">Cancel</button>
+                <button id="save-pay-modal" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition-all flex items-center justify-center gap-2">
+                    <span class="btn-text">Record Payment</span>
+                    <span class="btn-spinner hidden w-4 h-4 border-2 border-white border-r-transparent rounded-full animate-spin"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const invoiceId = '@invoiceId';
+    const token = localStorage.getItem('jwt_token');
+    const paymentModal = document.getElementById('payment-modal');
+
+    function authHeaders(json = false) {
+        const h = {};
+        if (token) h['Authorization'] = `Bearer ${token}`;
+        if (json) h['Content-Type'] = 'application/json';
+        return h;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+    }
+
+    function fmt(amount) {
+        return 'Rs. ' + parseFloat(amount || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function statusBadge(status) {
+        const map = {
+            'Unpaid':        'bg-rose-500/10 border-rose-500/20 text-rose-400',
+            'PartiallyPaid': 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+            'Paid':          'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+            'Cancelled':     'bg-slate-500/10 border-slate-500/20 text-slate-400'
+        };
+        return map[status] || 'bg-white/10 border-white/20 text-slate-300';
+    }
+
+    function showPageAlert(msg, type) {
+        const el = document.getElementById('page-alert');
+        el.className = `text-sm p-4 rounded-xl border ${type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`;
+        el.textContent = msg;
+        setTimeout(() => el.className = 'hidden text-sm p-4 rounded-xl border', 3000);
+    }
+
+    async function loadInvoice() {
+        try {
+            const res = await fetch(`/api/billing/${invoiceId}`, { headers: authHeaders() });
+            if (res.status === 401) { window.location.href = '/Account/Login'; return; }
+            const result = await res.json();
+            if (res.ok && result.success) {
+                renderInvoice(result.data);
+            } else {
+                document.getElementById('inv-subtitle').textContent = result.message || 'Invoice not found.';
+            }
+        } catch {
+            document.getElementById('inv-subtitle').textContent = 'Failed to load invoice.';
+        }
+    }
+
+    function renderInvoice(inv) {
+        const balance = inv.totalAmount - inv.amountPaid;
+        const date = new Date(inv.invoiceDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const due = inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'No due date';
+
+        document.getElementById('inv-subtitle').textContent = `${inv.invoiceNumber} — ${inv.patient?.fullName || 'Patient'}`;
+
+        // Invoice info grid
+        document.getElementById('invoice-info').innerHTML = `
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Invoice #</p><p class="text-white font-mono font-bold">${escapeHtml(inv.invoiceNumber)}</p></div>
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Patient</p><p class="text-slate-200 font-semibold">${escapeHtml(inv.patient?.fullName || 'N/A')}</p></div>
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Invoice Date</p><p class="text-slate-200">${date}</p></div>
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Due Date</p><p class="text-slate-200">${due}</p></div>
+            ${inv.appointment ? `<div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Appointment</p><p class="text-slate-200">Dr. ${escapeHtml(inv.appointment.doctorName)} — ${new Date(inv.appointment.appointmentDate).toLocaleDateString()}</p></div>` : ''}
+            ${inv.notes ? `<div class="col-span-2"><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Notes</p><p class="text-slate-300">${escapeHtml(inv.notes)}</p></div>` : ''}
+        `;
+
+        // Line items table
+        const itemsTable = document.getElementById('items-table');
+        itemsTable.innerHTML = (inv.items || []).map(item => `
+            <tr class="hover:bg-white/5 transition-colors">
+                <td class="py-3 pr-4 text-slate-200">${escapeHtml(item.description)}</td>
+                <td class="py-3 px-4 text-right text-slate-300">${fmt(item.unitPrice)}</td>
+                <td class="py-3 px-4 text-right text-slate-300">${item.quantity}</td>
+                <td class="py-3 pl-4 text-right text-white font-semibold">${fmt(item.unitPrice * item.quantity)}</td>
+            </tr>
+        `).join('') || '<tr><td colspan="4" class="py-6 text-center text-slate-500">No items.</td></tr>';
+        document.getElementById('items-total').textContent = fmt(inv.totalAmount);
+
+        // Payment summary
+        document.getElementById('summary-total').textContent = fmt(inv.totalAmount);
+        document.getElementById('summary-paid').textContent = fmt(inv.amountPaid);
+        document.getElementById('summary-balance').textContent = fmt(balance);
+        const badge = document.getElementById('summary-status-badge');
+        badge.className = `inline-flex px-3 py-1.5 text-xs font-bold rounded-xl border w-full justify-center ${statusBadge(inv.status)}`;
+        badge.textContent = inv.status === 'PartiallyPaid' ? 'Partially Paid' : inv.status;
+
+        // Pay action button
+        const payBtn = document.getElementById('pay-action-btn');
+        if (inv.status !== 'Paid' && inv.status !== 'Cancelled') {
+            payBtn.innerHTML = `<button onclick="openPayModal(${balance})" class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition-all">Record Payment</button>`;
+        } else {
+            payBtn.innerHTML = '';
+        }
+
+        // Header actions
+        const headerActions = document.getElementById('header-actions');
+        if (inv.status !== 'Paid' && inv.status !== 'Cancelled') {
+            headerActions.innerHTML = `<button onclick="cancelInv()" class="px-4 py-2 rounded-xl text-sm font-semibold border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-all">Cancel Invoice</button>`;
+        }
+
+        // Payment history
+        const historyEl = document.getElementById('payment-history');
+        if (!inv.payments || inv.payments.length === 0) {
+            historyEl.innerHTML = '<p class="text-slate-500 text-xs">No payments recorded yet.</p>';
+        } else {
+            historyEl.innerHTML = inv.payments.map(p => {
+                const d = new Date(p.paymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return `
+                <div class="flex items-start justify-between p-3 bg-white/5 border border-white/5 rounded-xl">
+                    <div>
+                        <p class="text-white font-semibold text-sm">${fmt(p.amount)}</p>
+                        <p class="text-slate-400 text-xs mt-0.5">${escapeHtml(p.method)} · ${d}</p>
+                        ${p.reference ? `<p class="text-slate-500 text-xs">Ref: ${escapeHtml(p.reference)}</p>` : ''}
+                    </div>
+                    <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">Paid</span>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    // Payment Modal
+    window.openPayModal = function(balance) {
+        document.getElementById('pay-balance-detail').textContent = fmt(balance);
+        document.getElementById('pay-amount').value = '';
+        document.getElementById('pay-amount-error').textContent = '';
+        document.getElementById('pay-modal-alert').className = 'hidden text-sm p-4 rounded-xl border mb-4';
+        paymentModal.classList.remove('hidden');
+    };
+
+    function closePayModal() { paymentModal.classList.add('hidden'); }
+    document.getElementById('close-pay-modal').addEventListener('click', closePayModal);
+    document.getElementById('cancel-pay-modal').addEventListener('click', closePayModal);
+    document.getElementById('payment-backdrop').addEventListener('click', closePayModal);
+
+    document.getElementById('save-pay-modal').addEventListener('click', async () => {
+        const amount = parseFloat(document.getElementById('pay-amount').value);
+        const method = document.getElementById('pay-method').value;
+        const reference = document.getElementById('pay-reference').value.trim();
+        document.getElementById('pay-amount-error').textContent = '';
+        if (!amount || amount <= 0) { document.getElementById('pay-amount-error').textContent = 'Enter a valid amount.'; return; }
+
+        const btn = document.getElementById('save-pay-modal');
+        const btnText = btn.querySelector('.btn-text');
+        const btnSpinner = btn.querySelector('.btn-spinner');
+        btn.disabled = true; btnText.classList.add('hidden'); btnSpinner.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/api/billing/${invoiceId}/payment`, {
+                method: 'POST',
+                headers: authHeaders(true),
+                body: JSON.stringify({ amount, method, reference: reference || null })
+            });
+            if (res.status === 401) { window.location.href = '/Account/Login'; return; }
+            const result = await res.json();
+            if (res.ok && result.success) {
+                closePayModal();
+                showPageAlert('Payment recorded successfully.', 'success');
+                loadInvoice();
+            } else {
+                document.getElementById('pay-modal-alert').className = 'text-sm p-4 rounded-xl border mb-4 bg-red-500/10 border-red-500/20 text-red-400';
+                document.getElementById('pay-modal-alert').textContent = result.message || 'Failed to record payment.';
+            }
+        } catch {
+            document.getElementById('pay-modal-alert').className = 'text-sm p-4 rounded-xl border mb-4 bg-red-500/10 border-red-500/20 text-red-400';
+            document.getElementById('pay-modal-alert').textContent = 'An error occurred.';
+        } finally {
+            btn.disabled = false; btnText.classList.remove('hidden'); btnSpinner.classList.add('hidden');
+        }
+    });
+
+    // Cancel Invoice
+    window.cancelInv = async function() {
+        if (!confirm('Cancel this invoice?')) return;
+        try {
+            const res = await fetch(`/api/billing/${invoiceId}`, { method: 'DELETE', headers: authHeaders() });
+            const result = await res.json();
+            if (res.ok && result.success) {
+                showPageAlert('Invoice cancelled.', 'success');
+                loadInvoice();
+            } else {
+                showPageAlert(result.message || 'Failed to cancel.', 'error');
+            }
+        } catch { showPageAlert('An error occurred.', 'error'); }
+    };
+
+    loadInvoice();
+});
+</script>
+}
