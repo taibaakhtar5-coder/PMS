@@ -103,7 +103,85 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    
+    // EnsureCreated creates the DB if it doesn't exist.
+    // For existing DBs it does nothing — so we also run ALTER TABLE / CREATE TABLE
+    // statements manually to add any new tables/columns without losing existing data.
     context.Database.EnsureCreated();
+
+    // Add DoctorId column to Appointments if it doesn't exist yet (added in a later iteration)
+    try {
+        context.Database.ExecuteSqlRaw(@"ALTER TABLE Appointments ADD COLUMN DoctorId TEXT NULL;");
+    } catch { /* column already exists — safe to ignore */ }
+
+    // Add DurationMinutes column to Appointments if missing
+    try {
+        context.Database.ExecuteSqlRaw(@"ALTER TABLE Appointments ADD COLUMN DurationMinutes INTEGER NOT NULL DEFAULT 30;");
+    } catch { /* already exists */ }
+
+    // Add Role column to Users if missing
+    try {
+        context.Database.ExecuteSqlRaw(@"ALTER TABLE Users ADD COLUMN Role TEXT NOT NULL DEFAULT 'Receptionist';");
+    } catch { /* already exists */ }
+
+    // Create Invoices table if missing
+    context.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS Invoices (
+            Id TEXT NOT NULL PRIMARY KEY,
+            PatientId TEXT NOT NULL,
+            AppointmentId TEXT NULL,
+            InvoiceNumber TEXT NOT NULL,
+            InvoiceDate TEXT NOT NULL,
+            DueDate TEXT NULL,
+            TotalAmount TEXT NOT NULL DEFAULT '0',
+            AmountPaid TEXT NOT NULL DEFAULT '0',
+            Status TEXT NOT NULL DEFAULT 'Unpaid',
+            Notes TEXT NULL,
+            CreatedAt TEXT NOT NULL,
+            FOREIGN KEY (PatientId) REFERENCES Patients(Id),
+            FOREIGN KEY (AppointmentId) REFERENCES Appointments(Id)
+        );");
+
+    context.Database.ExecuteSqlRaw(@"
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_Invoices_InvoiceNumber ON Invoices (InvoiceNumber);");
+
+    // Create InvoiceItems table if missing
+    context.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS InvoiceItems (
+            Id TEXT NOT NULL PRIMARY KEY,
+            InvoiceId TEXT NOT NULL,
+            Description TEXT NOT NULL,
+            UnitPrice TEXT NOT NULL DEFAULT '0',
+            Quantity INTEGER NOT NULL DEFAULT 1,
+            FOREIGN KEY (InvoiceId) REFERENCES Invoices(Id) ON DELETE CASCADE
+        );");
+
+    // Create Payments table if missing
+    context.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS Payments (
+            Id TEXT NOT NULL PRIMARY KEY,
+            InvoiceId TEXT NOT NULL,
+            Amount TEXT NOT NULL DEFAULT '0',
+            PaymentDate TEXT NOT NULL,
+            Method TEXT NOT NULL DEFAULT 'Cash',
+            Reference TEXT NULL,
+            Notes TEXT NULL,
+            FOREIGN KEY (InvoiceId) REFERENCES Invoices(Id) ON DELETE CASCADE
+        );");
+
+    // Create MedicalHistories table if missing
+    context.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS MedicalHistories (
+            Id TEXT NOT NULL PRIMARY KEY,
+            PatientId TEXT NOT NULL,
+            Diagnosis TEXT NOT NULL,
+            Treatment TEXT NULL,
+            DoctorName TEXT NULL,
+            Notes TEXT NULL,
+            VisitDate TEXT NOT NULL,
+            CreatedAt TEXT NOT NULL,
+            FOREIGN KEY (PatientId) REFERENCES Patients(Id) ON DELETE CASCADE
+        );");
 }
 
 // 8. Configure the HTTP request pipeline
