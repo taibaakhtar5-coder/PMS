@@ -16,7 +16,6 @@ namespace HealthcareCRM.Models
         [ForeignKey(nameof(PatientId))]
         public Patient? Patient { get; set; }
 
-        // Optional link to an appointment
         public Guid? AppointmentId { get; set; }
 
         [ForeignKey(nameof(AppointmentId))]
@@ -24,21 +23,19 @@ namespace HealthcareCRM.Models
 
         [Required]
         [MaxLength(50)]
-        public string InvoiceNumber { get; set; } = string.Empty; // e.g. INV-20260624-001
+        public string InvoiceNumber { get; set; } = string.Empty;
 
         [Required]
         public DateTime InvoiceDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? DueDate { get; set; }
 
+        // Using double instead of decimal — SQLite stores decimals as REAL anyway
         [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal TotalAmount { get; set; }
+        public double TotalAmount { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal AmountPaid { get; set; } = 0;
+        public double AmountPaid { get; set; } = 0;
 
-        // Status: Unpaid | PartiallyPaid | Paid | Cancelled
         [Required]
         [MaxLength(50)]
         public string Status { get; set; } = "Unpaid";
@@ -68,14 +65,14 @@ namespace HealthcareCRM.Models
         public string Description { get; set; } = string.Empty;
 
         [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal UnitPrice { get; set; }
+        public double UnitPrice { get; set; }
 
         [Required]
         public int Quantity { get; set; } = 1;
 
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal Total => UnitPrice * Quantity;
+        // Computed — not mapped to DB column
+        [NotMapped]
+        public double Total => UnitPrice * Quantity;
     }
 
     public class Payment
@@ -90,15 +87,14 @@ namespace HealthcareCRM.Models
         public Invoice? Invoice { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal Amount { get; set; }
+        public double Amount { get; set; }
 
         [Required]
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 
         [Required]
         [MaxLength(50)]
-        public string Method { get; set; } = "Cash"; // Cash, Card, Bank Transfer, Online
+        public string Method { get; set; } = "Cash";
 
         [MaxLength(200)]
         public string? Reference { get; set; }

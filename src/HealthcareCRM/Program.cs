@@ -133,8 +133,8 @@ using (var scope = app.Services.CreateScope())
             InvoiceNumber TEXT NOT NULL,
             InvoiceDate TEXT NOT NULL,
             DueDate TEXT NULL,
-            TotalAmount TEXT NOT NULL DEFAULT '0',
-            AmountPaid TEXT NOT NULL DEFAULT '0',
+            TotalAmount REAL NOT NULL DEFAULT 0,
+            AmountPaid REAL NOT NULL DEFAULT 0,
             Status TEXT NOT NULL DEFAULT 'Unpaid',
             Notes TEXT NULL,
             CreatedAt TEXT NOT NULL,
@@ -151,7 +151,7 @@ using (var scope = app.Services.CreateScope())
             Id TEXT NOT NULL PRIMARY KEY,
             InvoiceId TEXT NOT NULL,
             Description TEXT NOT NULL,
-            UnitPrice TEXT NOT NULL DEFAULT '0',
+            UnitPrice REAL NOT NULL DEFAULT 0,
             Quantity INTEGER NOT NULL DEFAULT 1,
             FOREIGN KEY (InvoiceId) REFERENCES Invoices(Id) ON DELETE CASCADE
         );");
@@ -161,7 +161,7 @@ using (var scope = app.Services.CreateScope())
         CREATE TABLE IF NOT EXISTS Payments (
             Id TEXT NOT NULL PRIMARY KEY,
             InvoiceId TEXT NOT NULL,
-            Amount TEXT NOT NULL DEFAULT '0',
+            Amount REAL NOT NULL DEFAULT 0,
             PaymentDate TEXT NOT NULL,
             Method TEXT NOT NULL DEFAULT 'Cash',
             Reference TEXT NULL,

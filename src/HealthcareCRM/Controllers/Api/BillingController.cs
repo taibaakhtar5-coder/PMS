@@ -229,14 +229,14 @@ namespace HealthcareCRM.Controllers.Api
         [System.ComponentModel.DataAnnotations.Required]
         public string Description { get; set; } = string.Empty;
         [System.ComponentModel.DataAnnotations.Required]
-        public decimal UnitPrice { get; set; }
+        public double UnitPrice { get; set; }
         public int Quantity { get; set; } = 1;
     }
 
     public class RecordPaymentRequest
     {
         [System.ComponentModel.DataAnnotations.Required]
-        public decimal Amount { get; set; }
+        public double Amount { get; set; }
         public string? Method { get; set; } = "Cash";
         public string? Reference { get; set; }
         public string? Notes { get; set; }
