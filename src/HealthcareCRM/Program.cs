@@ -19,7 +19,14 @@ EnvLoader.Load(".env");
 var builder = WebApplication.CreateBuilder(args);
 
 // 2. Add services to the container
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        // Prevent circular reference errors when EF Core navigation properties
+        // reference each other (e.g. Invoice → Items → Invoice → ...)
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
 
 // 3. Configure Database connection using SQLite
 var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION") 
