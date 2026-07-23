@@ -17,6 +17,9 @@ namespace HealthcareCRM.Data
         public DbSet<Invoice> Invoices { get; set; } = null!;
         public DbSet<InvoiceItem> InvoiceItems { get; set; } = null!;
         public DbSet<Payment> Payments { get; set; } = null!;
+        public DbSet<Prescription> Prescriptions { get; set; } = null!;
+        public DbSet<PrescriptionItem> PrescriptionItems { get; set; } = null!;
+        public DbSet<Notification> Notifications { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -60,6 +63,41 @@ namespace HealthcareCRM.Data
             modelBuilder.Entity<Invoice>()
                 .HasIndex(i => i.InvoiceNumber)
                 .IsUnique();
+
+            // Prescription -> Patient
+            modelBuilder.Entity<Prescription>()
+                .HasOne(p => p.Patient)
+                .WithMany()
+                .HasForeignKey(p => p.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Prescription -> Appointment (optional)
+            modelBuilder.Entity<Prescription>()
+                .HasOne(p => p.Appointment)
+                .WithMany()
+                .HasForeignKey(p => p.AppointmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // PrescriptionItem -> Prescription (cascade)
+            modelBuilder.Entity<PrescriptionItem>()
+                .HasOne(pi => pi.Prescription)
+                .WithMany(p => p.Items)
+                .HasForeignKey(pi => pi.PrescriptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Notification -> Patient (optional)
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Patient)
+                .WithMany()
+                .HasForeignKey(n => n.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Notification -> Appointment (optional)
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Appointment)
+                .WithMany()
+                .HasForeignKey(n => n.AppointmentId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Seed a sample patient to make testing Patient CRUD or list features easier for Member B
             modelBuilder.Entity<Patient>().HasData(

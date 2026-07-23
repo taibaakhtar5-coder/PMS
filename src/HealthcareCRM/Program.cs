@@ -189,6 +189,52 @@ using (var scope = app.Services.CreateScope())
             CreatedAt TEXT NOT NULL,
             FOREIGN KEY (PatientId) REFERENCES Patients(Id) ON DELETE CASCADE
         );");
+
+    // Create Prescriptions table if missing
+    context.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS Prescriptions (
+            Id TEXT NOT NULL PRIMARY KEY,
+            PatientId TEXT NOT NULL,
+            AppointmentId TEXT NULL,
+            DoctorName TEXT NOT NULL,
+            PrescribedDate TEXT NOT NULL,
+            ValidUntil TEXT NULL,
+            Diagnosis TEXT NULL,
+            Notes TEXT NULL,
+            Status TEXT NOT NULL DEFAULT 'Active',
+            CreatedAt TEXT NOT NULL,
+            FOREIGN KEY (PatientId) REFERENCES Patients(Id) ON DELETE CASCADE,
+            FOREIGN KEY (AppointmentId) REFERENCES Appointments(Id)
+        );");
+
+    // Create PrescriptionItems table if missing
+    context.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS PrescriptionItems (
+            Id TEXT NOT NULL PRIMARY KEY,
+            PrescriptionId TEXT NOT NULL,
+            MedicineName TEXT NOT NULL,
+            Dosage TEXT NULL,
+            Frequency TEXT NULL,
+            Duration TEXT NULL,
+            Instructions TEXT NULL,
+            FOREIGN KEY (PrescriptionId) REFERENCES Prescriptions(Id) ON DELETE CASCADE
+        );");
+
+    // Create Notifications table if missing
+    context.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS Notifications (
+            Id TEXT NOT NULL PRIMARY KEY,
+            PatientId TEXT NULL,
+            AppointmentId TEXT NULL,
+            Type TEXT NOT NULL DEFAULT 'General',
+            Title TEXT NOT NULL,
+            Message TEXT NOT NULL,
+            ScheduledAt TEXT NULL,
+            Status TEXT NOT NULL DEFAULT 'Pending',
+            CreatedAt TEXT NOT NULL,
+            FOREIGN KEY (PatientId) REFERENCES Patients(Id) ON DELETE CASCADE,
+            FOREIGN KEY (AppointmentId) REFERENCES Appointments(Id)
+        );");
 }
 
 // 8. Configure the HTTP request pipeline

@@ -1,0 +1,176 @@
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="space-y-6 animate-auth">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Notifications & Reminders</h1>
+            <p class="text-slate-400 text-sm">Track appointment reminders, medication alerts, and follow-up notices</p>
+        </div>
+        <div class="flex gap-3">
+            <button id="generate-reminders-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                Generate Reminders
+            </button>
+            <button id="dismiss-all-btn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+                Dismiss All
+            </button>
+        </div>
+    </div>
+
+    <!-- Page alert -->
+    <div id="page-alert" class="hidden text-sm p-4 rounded-xl border"></div>
+
+    <!-- Filters -->
+    <div class="bg-brand-card border border-white/5 rounded-2xl p-4 shadow-xl">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Status</label>
+                <select id="filter-status" style="color-scheme:dark;background-color:#141d36;color:#e2e8f0;" class="w-full border border-white/10 rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-primary transition-all text-sm">
+                    <option value="Pending" style="background-color:#141d36;color:#e2e8f0;">Pending</option>
+                    <option value="" style="background-color:#141d36;color:#e2e8f0;">All</option>
+                    <option value="Dismissed" style="background-color:#141d36;color:#e2e8f0;">Dismissed</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1.5">Type</label>
+                <select id="filter-type" style="color-scheme:dark;background-color:#141d36;color:#e2e8f0;" class="w-full border border-white/10 rounded-xl px-3 py-2.5 focus:outline-none focus:border-brand-primary transition-all text-sm">
+                    <option value="" style="background-color:#141d36;color:#e2e8f0;">All Types</option>
+                    <option value="AppointmentReminder" style="background-color:#141d36;color:#e2e8f0;">Appointment Reminder</option>
+                    <option value="MedicationReminder" style="background-color:#141d36;color:#e2e8f0;">Medication Reminder</option>
+                    <option value="FollowUp" style="background-color:#141d36;color:#e2e8f0;">Follow Up</option>
+                    <option value="General" style="background-color:#141d36;color:#e2e8f0;">General</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button id="clear-filters" class="w-full px-3 py-2.5 rounded-xl text-sm font-semibold border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all">Show All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div id="notifications-container" class="space-y-3">
+        <div class="py-12 text-center text-slate-500">
+            <span class="inline-block w-8 h-8 border-2 border-brand-primary border-r-transparent rounded-full animate-spin"></span>
+            <p class="mt-2 text-xs font-semibold">Loading notifications...</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('jwt_token');
+    const container = document.getElementById('notifications-container');
+    const filterStatus = document.getElementById('filter-status');
+    const filterType = document.getElementById('filter-type');
+    const pageAlert = document.getElementById('page-alert');
+
+    function authHeaders(json = false) {
+        const h = {};
+        if (token) h['Authorization'] = `Bearer ${token}`;
+        if (json) h['Content-Type'] = 'application/json';
+        return h;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+    }
+
+    function showAlert(msg, type) {
+        pageAlert.className = `text-sm p-4 rounded-xl border ${type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`;
+        pageAlert.textContent = msg;
+        setTimeout(() => pageAlert.className = 'hidden text-sm p-4 rounded-xl border', 3000);
+    }
+
+    function typeIcon(type) {
+        const icons = {
+            'AppointmentReminder': `<div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>`,
+            'MedicationReminder': `<div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" /></svg></div>`,
+            'FollowUp': `<div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>`,
+            'General': `<div class="w-10 h-10 rounded-xl bg-slate-500/10 border border-slate-500/20 flex items-center justify-center text-slate-400 flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg></div>`
+        };
+        return icons[type] || icons['General'];
+    }
+
+    async function fetchNotifications() {
+        try {
+            const params = new URLSearchParams();
+            if (filterStatus.value) params.set('status', filterStatus.value);
+            if (filterType.value) params.set('type', filterType.value);
+            const res = await fetch('/api/notifications' + (params.toString() ? `?${params}` : ''), { headers: authHeaders() });
+            if (res.status === 401) { window.location.href = '/Account/Login'; return; }
+            const result = await res.json();
+            if (res.ok && result.success) renderNotifications(result.data);
+            else container.innerHTML = `<p class="text-center text-red-400 text-sm">${escapeHtml(result.message)}</p>`;
+        } catch { container.innerHTML = `<p class="text-center text-red-400 text-sm">Network error.</p>`; }
+    }
+
+    function renderNotifications(items) {
+        if (!items || items.length === 0) {
+            container.innerHTML = `<div class="bg-brand-card border border-white/5 rounded-2xl p-12 text-center text-slate-500 text-sm">No notifications found.</div>`;
+            return;
+        }
+        container.innerHTML = items.map(n => {
+            const date = new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const isPending = n.status === 'Pending';
+            return `
+            <div class="bg-brand-card border ${isPending ? 'border-white/10' : 'border-white/5 opacity-60'} rounded-2xl p-4 shadow-lg flex items-start gap-4">
+                ${typeIcon(n.type)}
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-sm font-semibold text-white truncate">${escapeHtml(n.title)}</p>
+                        <span class="text-xs text-slate-500 whitespace-nowrap">${date}</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">${escapeHtml(n.message)}</p>
+                    ${n.patient ? `<p class="text-xs text-slate-500 mt-1">Patient: ${escapeHtml(n.patient.fullName)}</p>` : ''}
+                </div>
+                ${isPending ? `
+                <button onclick="dismissNotification('${n.id}')" class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all">
+                    Dismiss
+                </button>` : `<span class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500">Dismissed</span>`}
+            </div>`;
+        }).join('');
+    }
+
+    window.dismissNotification = async function(id) {
+        try {
+            const res = await fetch(`/api/notifications/${id}/dismiss`, { method: 'PATCH', headers: authHeaders() });
+            const result = await res.json();
+            if (res.ok && result.success) fetchNotifications();
+            else showAlert(result.message || 'Failed.', 'error');
+        } catch { showAlert('Error occurred.', 'error'); }
+    };
+
+    document.getElementById('dismiss-all-btn').addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/notifications/dismiss-all', { method: 'PATCH', headers: authHeaders() });
+            const result = await res.json();
+            if (res.ok && result.success) { showAlert(`${result.data} notification(s) dismissed.`, 'success'); fetchNotifications(); }
+            else showAlert(result.message || 'Failed.', 'error');
+        } catch { showAlert('Error occurred.', 'error'); }
+    });
+
+    document.getElementById('generate-reminders-btn').addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/notifications/generate-reminders', { method: 'POST', headers: authHeaders() });
+            const result = await res.json();
+            if (res.ok && result.success) { showAlert(`${result.data} reminder(s) generated.`, 'success'); fetchNotifications(); }
+            else showAlert(result.message || 'No upcoming appointments found.', 'error');
+        } catch { showAlert('Error occurred.', 'error'); }
+    });
+
+    filterStatus.addEventListener('change', fetchNotifications);
+    filterType.addEventListener('change', fetchNotifications);
+    document.getElementById('clear-filters').addEventListener('click', () => {
+        filterStatus.value = ''; filterType.value = '';
+        fetchNotifications();
+    });
+
+    fetchNotifications();
+    setInterval(fetchNotifications, 10000);
+});
+</script>
+}

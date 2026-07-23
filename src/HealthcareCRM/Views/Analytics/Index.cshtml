@@ -1,0 +1,281 @@
+@{
+    ViewData["Title"] = "Analytics";
+}
+
+<div class="space-y-6 animate-auth">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Analytics Dashboard</h1>
+            <p class="text-slate-400 text-sm">Live clinic performance metrics and trends</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-emerald-400 font-semibold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Live Data
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-5 shadow-xl">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Patients</p>
+            <p id="kpi-patients" class="text-3xl font-heading font-extrabold text-white mt-2">—</p>
+            <p id="kpi-new-patients" class="text-xs text-emerald-400 font-semibold mt-1">— new this month</p>
+        </div>
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-5 shadow-xl">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Today's Appointments</p>
+            <p id="kpi-today-appts" class="text-3xl font-heading font-extrabold text-white mt-2">—</p>
+            <p id="kpi-total-appts" class="text-xs text-slate-500 font-semibold mt-1">— total</p>
+        </div>
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-5 shadow-xl">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Revenue Collected</p>
+            <p id="kpi-collected" class="text-3xl font-heading font-extrabold text-emerald-400 mt-2">—</p>
+            <p id="kpi-outstanding" class="text-xs text-rose-400 font-semibold mt-1">— outstanding</p>
+        </div>
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-5 shadow-xl">
+            <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider">Active Prescriptions</p>
+            <p id="kpi-prescriptions" class="text-3xl font-heading font-extrabold text-white mt-2">—</p>
+            <p id="kpi-notifications" class="text-xs text-amber-400 font-semibold mt-1">— pending notifications</p>
+        </div>
+    </div>
+
+    <!-- Charts Row 1: Patient Registrations + Appointment Status Donut -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Patient Registrations Line Chart -->
+        <div class="lg:col-span-2 bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-base font-heading font-bold text-white mb-4">Patient Registrations — Last 14 Days</h3>
+            <div class="h-56">
+                <canvas id="chart-patients"></canvas>
+            </div>
+        </div>
+        <!-- Appointment Status Donut -->
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-base font-heading font-bold text-white mb-4">Appointment Status</h3>
+            <div class="h-56 flex items-center justify-center">
+                <canvas id="chart-appt-status"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2: Daily Appointments Bar + Revenue Area + Gender Pie -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Daily Appointments Bar Chart -->
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-base font-heading font-bold text-white mb-4">Daily Appointments — Last 14 Days</h3>
+            <div class="h-48">
+                <canvas id="chart-appts-daily"></canvas>
+            </div>
+        </div>
+        <!-- Revenue Area Chart -->
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-base font-heading font-bold text-white mb-4">Revenue Collected — Last 14 Days</h3>
+            <div class="h-48">
+                <canvas id="chart-revenue"></canvas>
+            </div>
+        </div>
+        <!-- Gender Pie Chart -->
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-base font-heading font-bold text-white mb-4">Patient Gender Distribution</h3>
+            <div class="h-48 flex items-center justify-center">
+                <canvas id="chart-gender"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('jwt_token');
+
+    function authHeaders() {
+        const h = {};
+        if (token) h['Authorization'] = `Bearer ${token}`;
+        return h;
+    }
+
+    function fmt(amount) {
+        return 'Rs. ' + parseFloat(amount || 0).toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    // Chart.js global defaults for dark theme
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+    Chart.defaults.font.size = 11;
+
+    const chartInstances = {};
+
+    function destroyChart(id) {
+        if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+    }
+
+    // Fill missing dates in a date-keyed dataset
+    function fillDates(data, days) {
+        const map = {};
+        data.forEach(d => { map[d.date ? d.date.substring(0, 10) : ''] = d.count ?? d.amount ?? 0; });
+        const result = { labels: [], values: [] };
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key = d.toISOString().substring(0, 10);
+            result.labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            result.values.push(map[key] || 0);
+        }
+        return result;
+    }
+
+    async function loadAnalytics() {
+        try {
+            const res = await fetch('/api/analytics/overview', { headers: authHeaders() });
+            if (res.status === 401) { window.location.href = '/Account/Login'; return; }
+            const result = await res.json();
+            if (!res.ok || !result.success) return;
+            const d = result.data;
+
+            // KPI Cards
+            document.getElementById('kpi-patients').textContent = d.totalPatients;
+            document.getElementById('kpi-new-patients').textContent = `+${d.newPatientsLast30Days} new this month`;
+            document.getElementById('kpi-today-appts').textContent = d.todayAppointments;
+            document.getElementById('kpi-total-appts').textContent = `${d.totalAppointments} total`;
+            document.getElementById('kpi-collected').textContent = fmt(d.collectedRevenue);
+            document.getElementById('kpi-outstanding').textContent = `${fmt(d.outstandingRevenue)} outstanding`;
+            document.getElementById('kpi-prescriptions').textContent = d.activePrescriptions;
+            document.getElementById('kpi-notifications').textContent = `${d.pendingNotifications} pending notifications`;
+
+            // 1. Patient Registrations Line Chart
+            const patDates = fillDates(d.patientsByDay, 14);
+            destroyChart('patients');
+            chartInstances['patients'] = new Chart(document.getElementById('chart-patients'), {
+                type: 'line',
+                data: {
+                    labels: patDates.labels,
+                    datasets: [{
+                        label: 'New Patients',
+                        data: patDates.values,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,0.15)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6366f1',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { stepSize: 1, precision: 0 }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // 2. Appointment Status Donut
+            destroyChart('appt-status');
+            chartInstances['appt-status'] = new Chart(document.getElementById('chart-appt-status'), {
+                type: 'doughnut',
+                data: {
+                    labels: d.appointmentStatus.map(s => s.status),
+                    datasets: [{
+                        data: d.appointmentStatus.map(s => s.count),
+                        backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(59,130,246,0.8)', 'rgba(239,68,68,0.8)'],
+                        borderColor: ['#10b981', '#3b82f6', '#ef4444'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10 } }
+                    }
+                }
+            });
+
+            // 3. Daily Appointments Bar Chart
+            const apptDates = fillDates(d.appointmentsByDay, 14);
+            destroyChart('appts-daily');
+            chartInstances['appts-daily'] = new Chart(document.getElementById('chart-appts-daily'), {
+                type: 'bar',
+                data: {
+                    labels: apptDates.labels,
+                    datasets: [{
+                        label: 'Appointments',
+                        data: apptDates.values,
+                        backgroundColor: 'rgba(99,102,241,0.6)',
+                        borderColor: '#6366f1',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { stepSize: 1, precision: 0 }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // 4. Revenue Area Chart
+            const revDates = fillDates(d.revenueByDay.map(r => ({ date: r.date, amount: r.amount })), 14);
+            destroyChart('revenue');
+            chartInstances['revenue'] = new Chart(document.getElementById('chart-revenue'), {
+                type: 'line',
+                data: {
+                    labels: revDates.labels,
+                    datasets: [{
+                        label: 'Revenue (Rs.)',
+                        data: revDates.values,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,0.15)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#10b981',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
+                            ticks: { callback: v => 'Rs.' + v.toLocaleString() }
+                        }
+                    }
+                }
+            });
+
+            // 5. Gender Pie Chart
+            destroyChart('gender');
+            chartInstances['gender'] = new Chart(document.getElementById('chart-gender'), {
+                type: 'pie',
+                data: {
+                    labels: d.genderDist.map(g => g.gender),
+                    datasets: [{
+                        data: d.genderDist.map(g => g.count),
+                        backgroundColor: ['rgba(99,102,241,0.8)', 'rgba(236,72,153,0.8)', 'rgba(251,191,36,0.8)'],
+                        borderColor: ['#6366f1', '#ec4899', '#fbbf24'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10 } } }
+                }
+            });
+
+        } catch (err) { console.error('Analytics error:', err); }
+    }
+
+    loadAnalytics();
+    setInterval(loadAnalytics, 15000); // Refresh every 15 seconds
+});
+</script>
+}

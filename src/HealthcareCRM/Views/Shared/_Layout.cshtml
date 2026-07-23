@@ -80,6 +80,12 @@
                         <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" href="/Patient/List">Patients</a>
                         <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" href="/Appointment/List">Appointments</a>
                         <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" href="/Billing/List">Billing</a>
+                        <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" href="/Prescription/List">Prescriptions</a>
+                        <a class="text-slate-400 hover:text-white font-medium text-sm transition-colors" href="/Analytics/Index">Analytics</a>
+                        <a id="nav-notifications" class="relative text-slate-400 hover:text-white font-medium text-sm transition-colors flex items-center gap-1" href="/Notification/List">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>
+                            <span id="notif-badge" class="hidden absolute -top-1.5 -right-2 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center"></span>
+                        </a>
                     }
                     else
                     {
@@ -166,6 +172,32 @@
                     localStorage.removeItem('user_email');
                     localStorage.removeItem('user_role');
                 });
+            }
+
+            // Notification badge — poll pending count every 15s
+            const badge = document.getElementById('notif-badge');
+            if (badge) {
+                async function updateNotifBadge() {
+                    try {
+                        const t = localStorage.getItem('jwt_token');
+                        if (!t) return;
+                        const res = await fetch('/api/notifications/pending-count', {
+                            headers: { 'Authorization': `Bearer ${t}` }
+                        });
+                        if (res.ok) {
+                            const result = await res.json();
+                            const count = result.data || 0;
+                            if (count > 0) {
+                                badge.textContent = count > 9 ? '9+' : count;
+                                badge.classList.remove('hidden');
+                            } else {
+                                badge.classList.add('hidden');
+                            }
+                        }
+                    } catch {}
+                }
+                updateNotifBadge();
+                setInterval(updateNotifBadge, 15000);
             }
         })();
     </script>

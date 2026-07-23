@@ -1,0 +1,123 @@
+@{
+    ViewData["Title"] = "Prescription Detail";
+    var prescriptionId = ViewBag.PrescriptionId;
+}
+
+<div class="space-y-6 animate-auth">
+    <div class="flex items-center gap-4">
+        <a href="/Prescription/List" class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-slate-400 hover:text-white transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+        </a>
+        <div class="flex-1">
+            <h1 class="text-3xl font-heading font-extrabold text-white tracking-tight">Prescription Detail</h1>
+            <p id="rx-subtitle" class="text-slate-400 text-sm">Loading...</p>
+        </div>
+        <div id="header-actions"></div>
+    </div>
+
+    <div id="page-alert" class="hidden text-sm p-4 rounded-xl border"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Prescription Info + Medicines -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+                <div id="rx-info" class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                    <p class="text-slate-500 text-xs">Loading...</p>
+                </div>
+            </div>
+            <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-heading font-bold text-white mb-4">Medications</h3>
+                <div id="medicines-list" class="space-y-3"></div>
+            </div>
+        </div>
+        <!-- Right: Summary -->
+        <div class="bg-brand-card border border-white/5 rounded-2xl p-6 shadow-xl h-fit">
+            <h3 class="text-base font-heading font-bold text-white mb-4">Summary</h3>
+            <div id="rx-summary" class="space-y-3 text-sm"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const rxId = '@prescriptionId';
+    const token = localStorage.getItem('jwt_token');
+    function authHeaders(json=false) { const h={}; if(token) h['Authorization']=`Bearer ${token}`; if(json) h['Content-Type']='application/json'; return h; }
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+    function showAlert(msg, type) {
+        const el = document.getElementById('page-alert');
+        el.className = `text-sm p-4 rounded-xl border ${type==='success'?'bg-emerald-500/10 border-emerald-500/20 text-emerald-400':'bg-red-500/10 border-red-500/20 text-red-400'}`;
+        el.textContent = msg;
+        setTimeout(() => el.className = 'hidden text-sm p-4 rounded-xl border', 3000);
+    }
+
+    async function loadRx() {
+        try {
+            const res = await fetch(`/api/prescriptions/${rxId}`, { headers: authHeaders() });
+            if (res.status === 401) { window.location.href = '/Account/Login'; return; }
+            const result = await res.json();
+            if (res.ok && result.success) renderRx(result.data);
+            else document.getElementById('rx-subtitle').textContent = result.message || 'Not found.';
+        } catch { document.getElementById('rx-subtitle').textContent = 'Failed to load.'; }
+    }
+
+    function renderRx(rx) {
+        const statusColors = { 'Active':'bg-emerald-500/10 border-emerald-500/20 text-emerald-400', 'Expired':'bg-amber-500/10 border-amber-500/20 text-amber-400', 'Cancelled':'bg-rose-500/10 border-rose-500/20 text-rose-400' };
+        document.getElementById('rx-subtitle').textContent = `Prescription for ${rx.patient?.fullName || 'Patient'} — Dr. ${rx.doctorName}`;
+
+        const date = new Date(rx.prescribedDate).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+        const validUntil = rx.validUntil ? new Date(rx.validUntil).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : 'No expiry';
+
+        document.getElementById('rx-info').innerHTML = `
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Patient</p><p class="text-slate-200 font-semibold">${escapeHtml(rx.patient?.fullName||'N/A')}</p></div>
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Doctor</p><p class="text-slate-200">Dr. ${escapeHtml(rx.doctorName)}</p></div>
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Prescribed Date</p><p class="text-slate-200">${date}</p></div>
+            <div><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Valid Until</p><p class="text-slate-200">${validUntil}</p></div>
+            ${rx.diagnosis ? `<div class="col-span-2"><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Diagnosis</p><p class="text-slate-200">${escapeHtml(rx.diagnosis)}</p></div>` : ''}
+            ${rx.notes ? `<div class="col-span-3"><p class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Notes</p><p class="text-slate-300">${escapeHtml(rx.notes)}</p></div>` : ''}
+        `;
+
+        const medList = document.getElementById('medicines-list');
+        if (!rx.items || rx.items.length === 0) {
+            medList.innerHTML = '<p class="text-slate-500 text-sm">No medicines listed.</p>';
+        } else {
+            medList.innerHTML = rx.items.map((item, i) => `
+                <div class="flex items-start gap-4 p-4 bg-white/5 border border-white/5 rounded-xl">
+                    <div class="w-8 h-8 rounded-lg bg-brand-primary/20 border border-brand-primary/30 flex items-center justify-center text-brand-primary text-xs font-bold flex-shrink-0">${i+1}</div>
+                    <div class="flex-1">
+                        <p class="text-white font-semibold text-sm">${escapeHtml(item.medicineName)}</p>
+                        <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            ${item.dosage ? `<span class="text-xs text-slate-400">Dosage: <span class="text-slate-300">${escapeHtml(item.dosage)}</span></span>` : ''}
+                            ${item.frequency ? `<span class="text-xs text-slate-400">Frequency: <span class="text-slate-300">${escapeHtml(item.frequency)}</span></span>` : ''}
+                            ${item.duration ? `<span class="text-xs text-slate-400">Duration: <span class="text-slate-300">${escapeHtml(item.duration)}</span></span>` : ''}
+                        </div>
+                        ${item.instructions ? `<p class="text-xs text-slate-500 mt-1">${escapeHtml(item.instructions)}</p>` : ''}
+                    </div>
+                </div>`).join('');
+        }
+
+        document.getElementById('rx-summary').innerHTML = `
+            <div class="flex justify-between"><span class="text-slate-400">Medicines</span><span class="text-white font-semibold">${rx.items?.length || 0}</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Status</span><span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-lg border ${statusColors[rx.status]||'bg-white/10 border-white/10 text-slate-300'}">${escapeHtml(rx.status)}</span></div>
+        `;
+
+        if (rx.status === 'Active') {
+            document.getElementById('header-actions').innerHTML = `<button onclick="cancelRx()" class="px-4 py-2 rounded-xl text-sm font-semibold border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-all">Cancel Prescription</button>`;
+        }
+    }
+
+    window.cancelRx = async function() {
+        if (!confirm('Cancel this prescription?')) return;
+        try {
+            const res = await fetch(`/api/prescriptions/${rxId}/status`, { method:'PATCH', headers:authHeaders(true), body:JSON.stringify({status:'Cancelled'}) });
+            const result = await res.json();
+            if (res.ok && result.success) { showAlert('Prescription cancelled.', 'success'); loadRx(); }
+            else showAlert(result.message||'Failed.', 'error');
+        } catch { showAlert('Error occurred.', 'error'); }
+    };
+
+    loadRx();
+});
+</script>
+}
